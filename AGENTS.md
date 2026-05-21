@@ -4,7 +4,7 @@
 
 This package encapsulates all governance business logic for the Aragon platform. It replaces business logic currently fragmented across `app-backend` (Node.js) and `app` (Next.js frontend), consolidating it into a single importable TypeScript package.
 
-The package sits between the Envio on-chain indexer (`envio-testing/`) and the Next.js BFF layer. It queries indexed data from Envio, applies domain logic (membership aggregation, voting power calculation, permission checks), enriches with external data (ENS, token prices), and exposes use cases via a controller.
+The package sits between the Envio on-chain indexer (`aragon-indexer/`) and the Next.js BFF layer. It queries indexed data from Envio, applies domain logic (membership aggregation, voting power calculation, permission checks), enriches with external data (ENS, token prices), and exposes use cases via a controller.
 
 ## How to Approach This Repo
 
@@ -48,44 +48,39 @@ Dependencies flow inward: Infrastructure → Use Cases → Domain. The domain la
 
 ### Project structure within each layer
 
-Follow the `ddd-core-ts` project structure conventions:
+Follow the `ddd-core-ts` project structure conventions.
 
-```
-src/
-├── domain/
-│   ├── member/
-│   │   ├── Member.ts                    # Value object
-│   │   ├── MemberMetrics.ts            # Value object
-│   │   └── MemberFilter.ts            # Value object
-│   ├── membership/
-│   │   ├── Membership.ts               # Aggregate
-│   │   ├── GovernanceType.ts           # as const enum
-│   │   └── GovernanceTypeResolver.ts   # Pure function
-│   ├── voting-power/
-│   │   ├── VotingPower.ts
-│   │   ├── ERC20VotingPower.ts
-│   │   └── VEVotingPower.ts
-│   └── ...
-│
-├── use-cases/
-│   ├── GetMembership.ts
-│   ├── GetERC20Membership.ts
-│   ├── GetVEMembership.ts
-│   └── ...
-│
-└── infrastructure/
-    ├── controllers/
-    │   └── MemberController/
-    │       ├── MemberController.ts
-    │       └── maps/
-    ├── stores/
-    │   ├── EnvioTokenVotingDelegationStore/
-    │   ├── EnvioVELockStore/
-    │   └── ...
-    └── services/
-        ├── EnsResolver.ts
-        └── TokenPriceProvider.ts
-```
+## Formatting Rules
+
+1. **Indent with 2 spaces.** Configured via biome (`indentWidth: 2`). Run `pnpm run lint` to auto-format.
+2. **JSDoc comments use multi-line format:**
+   ```typescript
+   /**
+    * My comment
+    */
+   ```
+   Never use single-line JSDoc (`/** My comment */`).
+3. **Test files are colocated** with the source files they test: `Member.ts` → `Member.test.ts` in the same directory. Not in a separate `test/` folder.
+
+## Primitives
+
+The `src/domain/primitives/` directory contains reusable domain primitives. Always use these instead of raw types:
+
+| Primitive | Use instead of | Import from |
+|-----------|---------------|-------------|
+| `Address` | `string` for Ethereum addresses | `@/domain/primitives` |
+| `HexString` | `string` for 0x-prefixed hex values | `@/domain/primitives` |
+| `HexNumber` | `string` or `bigint` for hex-encoded numbers | `@/domain/primitives` |
+| `Wei` / `Gwei` / `Ether` | `BigNumber` for EVM unit values | `@/domain/primitives` |
+| `UUID` | `string` for UUIDs | `@/domain/primitives` |
+| `Page<T>` / `PageRequest` | ad-hoc pagination shapes | `@/domain/primitives` |
+
+**Rules:**
+- **Use `Address` for all Ethereum addresses** in domain objects and use cases. Never store addresses as raw strings in domain types.
+- **Use `HexString` as the parameter type** for functions that accept 0x-prefixed hex strings (e.g., `Address.fromHexString(hex: HexString)`). This catches invalid inputs at compile time.
+- **Cast to `HexString` at infrastructure boundaries** where external data enters as `string` (e.g., DTOs from Envio). Use `as HexString` in mappers — the runtime validation happens inside the primitive's factory method.
+- **Serialize via `.toHexString()`** when converting domain objects to DTOs for external consumers.
+- Import primitives from the barrel `@/domain/primitives`, not from individual files.
 
 ## Key Rules
 
@@ -102,18 +97,44 @@ src/
 
 ## Data Sources
 
-The primary data source is the Envio indexer (`envio-testing/`), which provides:
+The primary data source is the Envio indexer (`aragon-indexer/`), which is partitioned internally into a generic / Aragon split (see `aragon-indexer/CLAUDE.md` → "Split path"):
 
-- `TokenVotingDelegation` — ERC20Votes delegation state (delegator, delegate, voting power)
-- `VELock` — Voting escrow lock positions (amount, status, delegation)
+Generic (chain-wide ERC20Votes):
+- `ERC20VotesDelegate` — per-(token, delegate) state: voting power, delegationCount, first/lastVotingPowerChangeTimestamp
+- `Delegation` — per-(token, delegator) → currentDelegate
+
+Aragon-specific:
 - `Plugin` — Installed governance plugins (type, associated contracts)
-- `VESettings` — Escrow configuration (curve parameters)
-- `MemberMetrics` — Vote/proposal activity counts
+- `VELock` — Voting escrow lock positions (amount, status, delegation)
+- `MemberMetrics` — In-plugin engagement (VoteCast / ProposalCreated activity only)
+
+`EnvioTokenVotingMemberStore.findMembersByPluginAndToken` is the join point between the two halves: it pulls `ERC20VotesDelegate` rows and `MemberMetrics` rows in one query and merges activity timestamps client-side via `min`/`max`. If the indexer is ever split into two separate Envio projects, this is the file that gets a second `EnvioClient` argument and runs two queries instead of one — no other code change required.
 
 Infrastructure adapters query this data via Envio's GraphQL/SQL API. Additional data comes from:
 - ENS resolution (name, avatar)
 - On-chain RPC reads (real-time token balance, current voting power)
 - Token price feeds (USD conversion)
+
+## Mapper function naming
+
+Every mapper module — controller-side and store-side — exposes its mapping conversion under one of two canonical names:
+
+- `mapDTOToDomain(...)` for the DTO → domain direction.
+- `mapDomainToDTO(...)` for the domain → DTO direction.
+
+These names match what `ddd-core-ts`'s `handleRequest` looks up on controller-side mapper modules, so using them everywhere also keeps the controller and store layers consistent. Auxiliary helpers within a mapper (private parsers, ID-extraction utilities, etc.) keep descriptive names — the rule applies to the conversion function the rest of the codebase calls.
+
+## GraphQL response handling
+
+Anything returned by `EnvioClient.query` is `unknown`. The store's job is orchestration — form variables, call the client, hand the raw response off, combine results across queries, wrap errors. Shape assertions and DTO → domain conversion happen in mappers, which are the single trust boundary for indexer data.
+
+Each query has a corresponding mapper module under the store's `maps/` directory. The mapper owns:
+
+1. Zod schemas describing the expected response shape, with TypeScript types derived from those schemas via `z.infer<...>` so the schema is the single source of truth.
+2. A `mapDTOToDomain(raw: unknown)` function that calls `.parse()` on the raw input and returns the domain objects. The Zod parse failure becomes a descriptive runtime error if the indexer's response shape ever drifts.
+3. DTO → domain mapping. When the mapper passes raw inputs into a domain factory (`Address.fromHexString`, `TokenVotingMember.create`, etc.), the factory's own validation is the final shape check on the values inside the response.
+
+Stores never declare DTO interfaces inline and never pass a type argument to `query`. Calling `await this.envio.query(QUERY, vars)` produces `unknown`; that goes straight into the mapper's `mapDTOToDomain` function.
 
 ## Testing
 

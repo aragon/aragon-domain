@@ -62,7 +62,7 @@ Based on the [Aragon Governance Membership Domain Model](https://www.figma.com/b
 ## Data Flow
 
 ```
-On-chain events → Envio (envio-testing/) → aragon-subdomain → Next.js BFF → Frontend
+On-chain events → Envio (aragon-indexer/) → aragon-subdomain → Next.js BFF → Frontend
 ```
 
 - **Envio** indexes raw on-chain state (delegations, locks, plugin installations)
@@ -82,7 +82,7 @@ pnpm run test
 
 | Package | Path | Role |
 |---------|------|------|
-| `envio-testing` | `/envio-testing` | Envio indexer for on-chain event data |
+| `aragon-indexer` | `/aragon-indexer` | Envio indexer for on-chain event data |
 | `app-backend` | `/app-backend` | Legacy backend (being replaced) |
 | `app` | `/app` | Next.js frontend |
 | `ve-governance-indexer` | `/ve-governance-indexer` | Production VE governance indexer (reference) |

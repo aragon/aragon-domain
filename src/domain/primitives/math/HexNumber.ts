@@ -1,0 +1,72 @@
+import { ValueObject } from 'ddd-core-ts';
+import { z } from 'zod';
+import { assertHexString, type HexString } from '../validation/ZodHexString';
+
+const HexNumberPropsSchema = z.object({
+  hexNumberValue: z
+    .string()
+    .refine(
+      (value) => typeof value === 'string' && /^0x[0-9a-fA-F]*$/.test(value),
+      'hexNumberValue must be a 0x-prefixed hex string and not undefined',
+    ),
+});
+
+type HexNumberProps = z.infer<typeof HexNumberPropsSchema>;
+
+export class HexNumber extends ValueObject<HexNumberProps> {
+  /**
+   * @returns The number as a lowercase base 16 string value, prefixed with 0x.
+   */
+  public toHexString(): HexString {
+    return this.props.hexNumberValue.toLowerCase() as HexString;
+  }
+
+  /**
+   * @returns The decimal value of the hex number.
+   */
+  public toBigint(): bigint {
+    if (this.props.hexNumberValue === '0x') {
+      return 0n;
+    }
+    return BigInt(this.props.hexNumberValue);
+  }
+
+  /**
+   * @returns The number of bytes represented by the hex string.
+   */
+  public getByteLength(): number {
+    const hex = this.props.hexNumberValue.replace(/^0x/, '');
+    if (hex.length === 0) {
+      return 0;
+    }
+    // Pad to even length, then divide by 2 (2 hex chars = 1 byte)
+    const padded = hex.length % 2 === 0 ? hex : `0${hex}`;
+    return padded.length / 2;
+  }
+
+  public equals(other: HexNumber): boolean {
+    return (
+      this.props.hexNumberValue.toLowerCase() ===
+      other.props.hexNumberValue.toLowerCase()
+    );
+  }
+
+  public static create(props: HexNumberProps): HexNumber {
+    const validatedProps = HexNumberPropsSchema.parse(props);
+    assertHexString(
+      validatedProps.hexNumberValue,
+      'hexNumberValue must be a 0x-prefixed hex string',
+    );
+    return new HexNumber(validatedProps);
+  }
+
+  /**
+   * Creates a HexNumber instance from a decimal number.
+   * @param decimalNumber A decimal bigint or number.
+   */
+  public static createFromDecimal(decimalNumber: bigint | number): HexNumber {
+    return HexNumber.create({
+      hexNumberValue: `0x${decimalNumber.toString(16)}`,
+    });
+  }
+}
