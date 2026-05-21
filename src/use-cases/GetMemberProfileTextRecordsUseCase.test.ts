@@ -12,7 +12,7 @@ describe('GetMemberProfileTextRecordsUseCase', () => {
   const buildMockStore = (
     records: MemberProfileTextRecord[] = [],
   ): MemberProfileStore => ({
-    findTextRecordsBySubdomain: jest.fn().mockResolvedValue(records),
+    findTextRecordsBySubdomain: vi.fn().mockResolvedValue(records),
   });
 
   it('returns the text records from the store', async () => {
@@ -49,7 +49,7 @@ describe('GetMemberProfileTextRecordsUseCase', () => {
 
   it('wraps store errors with a use-case message', async () => {
     const failingStore: MemberProfileStore = {
-      findTextRecordsBySubdomain: jest
+      findTextRecordsBySubdomain: vi
         .fn()
         .mockRejectedValue(new Error('graphql exploded')),
     };

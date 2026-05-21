@@ -26,4 +26,9 @@ describe('Wei', () => {
     const token = Wei.create(value);
     expect(token.toBigNumber()).toEqual(value);
   });
+
+  it('toWei() returns the same instance (identity conversion)', () => {
+    const token = Wei.create(new BigNumber('1230000000000000000'));
+    expect(token.toWei()).toBe(token);
+  });
 });

@@ -23,9 +23,7 @@ export class MemberProfileTextRecord extends ValueObject<MemberProfileTextRecord
     return this.props.value;
   }
 
-  static create(
-    props: MemberProfileTextRecordProps,
-  ): MemberProfileTextRecord {
+  static create(props: MemberProfileTextRecordProps): MemberProfileTextRecord {
     const validated = MemberProfileTextRecordPropsSchema.parse(props);
     return new MemberProfileTextRecord(validated);
   }

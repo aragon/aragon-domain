@@ -14,10 +14,7 @@ export interface GetMemberProfileTextRecordsUseCaseProps {
  */
 export class GetMemberProfileTextRecordsUseCase
   implements
-    UseCase<
-      GetMemberProfileTextRecordsUseCaseProps,
-      MemberProfileTextRecord[]
-    >
+    UseCase<GetMemberProfileTextRecordsUseCaseProps, MemberProfileTextRecord[]>
 {
   public readonly code = 'GetMemberProfileTextRecordsUseCase';
 
@@ -27,7 +24,9 @@ export class GetMemberProfileTextRecordsUseCase
     props: GetMemberProfileTextRecordsUseCaseProps,
   ): Promise<MemberProfileTextRecord[]> {
     try {
-      return await this.profileStore.findTextRecordsBySubdomain(props.subdomain);
+      return await this.profileStore.findTextRecordsBySubdomain(
+        props.subdomain,
+      );
     } catch (cause) {
       throw new Error('Error while getting member profile text records', {
         cause,

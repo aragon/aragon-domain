@@ -1,4 +1,5 @@
 import { HexNumber } from '../math/HexNumber';
+import type { HexString } from '../validation/ZodHexString';
 import { Address } from './Address';
 
 describe('Address', () => {
@@ -57,5 +58,19 @@ describe('Address', () => {
 
     expect(address1.equals(address2)).toBe(false);
     expect(address2.equals(address3)).toBe(true);
+  });
+
+  it('exposes the underlying HexNumber via toHexNumber()', () => {
+    expect(address.toHexNumber()).toBe(addressValue);
+  });
+
+  it('constructs from a HexString', () => {
+    const hex = '0x0123456789abcdef0123456789abcdef01234567' as HexString;
+    const fromHex = Address.fromHexString(hex);
+
+    // Internally normalizes to checksum casing; structural equality is
+    // by checksum hex.
+    expect(fromHex.equals(address)).toBe(true);
+    expect(fromHex.toHexNumber().toHexString()).toBe(hex);
   });
 });
