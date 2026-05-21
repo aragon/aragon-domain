@@ -14,7 +14,7 @@ const NODE =
 function buildController(responses: unknown[]): AragonSubdomain {
   const envio = new EnvioClient('https://unused.example.invalid');
   const queue = [...responses];
-  jest.spyOn(envio, 'query').mockImplementation(async () => {
+  vi.spyOn(envio, 'query').mockImplementation(async () => {
     if (queue.length === 0) {
       throw new Error('EnvioClient.query called more times than expected');
     }
@@ -83,9 +83,7 @@ describe('AragonSubdomain', () => {
     it('returns [] when the subdomain has no resolver yet', async () => {
       const controller = buildController([
         {
-          Domain: [
-            { id: 'domain-id', name: 'ea1.aragon.eth', resolver: null },
-          ],
+          Domain: [{ id: 'domain-id', name: 'ea1.aragon.eth', resolver: null }],
         },
       ]);
 

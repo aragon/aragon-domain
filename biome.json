@@ -27,7 +27,7 @@
       "trailingCommas": "all"
     },
     "globals": [
-      "jest",
+      "vi",
       "describe",
       "it",
       "test",
@@ -130,10 +130,30 @@
     },
     {
       "includes": [
-        "**/*.test.ts"
+        "**/*.test.ts",
+        "test/**/*.ts"
       ],
       "linter": {
-        "rules": {}
+        "rules": {
+          "suspicious": {
+            "useAwait": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        ".github/workflows/scripts/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noCommonJs": "off"
+          },
+          "suspicious": {
+            "useAwait": "off"
+          }
+        }
       }
     },
     {

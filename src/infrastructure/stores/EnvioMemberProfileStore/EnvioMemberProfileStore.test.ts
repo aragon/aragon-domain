@@ -4,7 +4,8 @@ import { EnvioMemberProfileStore } from './EnvioMemberProfileStore';
 
 const CHAIN_ID = '1';
 const RESOLVER = '0x231b0ee14048e9dccd1d247744d114a4eb5e8e63';
-const NODE = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const NODE =
+  '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 const textId = (version: string, key: string) =>
   `${CHAIN_ID}-${RESOLVER}-${NODE}-${version}-${key}`;
@@ -23,7 +24,7 @@ function buildMockEnvioClient(responses: unknown[]): MockClient {
   const calls: QueryCall[] = [];
   const queue = [...responses];
   const envio = {
-    query: jest.fn(
+    query: vi.fn(
       async (document: string, variables: Record<string, unknown>) => {
         calls.push({ document, variables });
         return queue.shift();
@@ -47,7 +48,11 @@ describe('EnvioMemberProfileStore', () => {
               version: '0',
               texts: [
                 { id: textId('0', 'avatar'), key: 'avatar', value: 'ipfs://x' },
-                { id: textId('0', 'url'), key: 'url', value: 'https://aragon.org' },
+                {
+                  id: textId('0', 'url'),
+                  key: 'url',
+                  value: 'https://aragon.org',
+                },
               ],
             },
           },
@@ -117,7 +122,11 @@ describe('EnvioMemberProfileStore', () => {
               version: '0',
               texts: [
                 { id: textId('0', 'avatar'), key: 'avatar', value: null },
-                { id: textId('0', 'url'), key: 'url', value: 'https://aragon.org' },
+                {
+                  id: textId('0', 'url'),
+                  key: 'url',
+                  value: 'https://aragon.org',
+                },
               ],
             },
           },
@@ -194,7 +203,7 @@ describe('EnvioMemberProfileStore', () => {
 
   it('wraps GraphQL failures with a profile-level error', async () => {
     const envio = {
-      query: jest.fn().mockRejectedValue(new Error('graphql exploded')),
+      query: vi.fn().mockRejectedValue(new Error('graphql exploded')),
     } as unknown as EnvioClient;
     const store = new EnvioMemberProfileStore(envio);
 

@@ -40,9 +40,7 @@ export class MemberProfileAragonName extends ValueObject<MemberProfileAragonName
     return this.props.value;
   }
 
-  static create(
-    props: MemberProfileAragonNameInput,
-  ): MemberProfileAragonName {
+  static create(props: MemberProfileAragonNameInput): MemberProfileAragonName {
     const validated = MemberProfileAragonNamePropsSchema.parse(props);
     return new MemberProfileAragonName(validated);
   }
