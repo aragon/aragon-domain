@@ -30,8 +30,6 @@ const FindMemberProfileTextRecordsResponseSchema = z.object({
   Domain: z
     .array(
       z.object({
-        id: z.string(),
-        name: z.string(),
         resolver: ResolverSchema.nullable(),
       }),
     )

@@ -42,8 +42,6 @@ describe('EnvioMemberProfileStore', () => {
       {
         Domain: [
           {
-            id: 'domain-id',
-            name: 'ea1.aragon.eth',
             resolver: {
               version: '0',
               texts: [
@@ -90,8 +88,6 @@ describe('EnvioMemberProfileStore', () => {
       {
         Domain: [
           {
-            id: 'domain-id',
-            name: 'ea1.aragon.eth',
             resolver: {
               version: '1',
               texts: [
@@ -116,8 +112,6 @@ describe('EnvioMemberProfileStore', () => {
       {
         Domain: [
           {
-            id: 'domain-id',
-            name: 'ea1.aragon.eth',
             resolver: {
               version: '0',
               texts: [
@@ -148,8 +142,6 @@ describe('EnvioMemberProfileStore', () => {
       {
         Domain: [
           {
-            id: 'domain-id',
-            name: 'ea1.aragon.eth',
             resolver: {
               version: '7',
               texts: [
@@ -187,8 +179,6 @@ describe('EnvioMemberProfileStore', () => {
       {
         Domain: [
           {
-            id: 'domain-id',
-            name: 'ea1.aragon.eth',
             resolver: null,
           },
         ],
