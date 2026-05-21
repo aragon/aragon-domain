@@ -1,9 +1,13 @@
 import assert from 'node:assert';
 import { AragonSubdomain, EnvioClient } from '../src';
 
+const ALICE = '0x0123456789abcdef0123456789abcdef01234567';
+const PLUGIN = '0x17a1688c56087ade762721180e1cc1e831c73719';
+const TOKEN = '0x0a830e9f2baa2ebaf8d33c0806283dea9c08952f';
 const RESOLVER = '0x231b0ee14048e9dccd1d247744d114a4eb5e8e63';
 const NODE =
   '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const DEFAULT_EVM_COIN_TYPE = '2147483648'; // 0x80000000
 
 /**
  * Builds an AragonSubdomain backed by an EnvioClient whose `query`
@@ -24,6 +28,61 @@ function buildController(responses: unknown[]): AragonSubdomain {
 }
 
 describe('AragonSubdomain', () => {
+  describe('getMembership', () => {
+    it('returns a paginated DTO of ERC20 members', async () => {
+      const controller = buildController([
+        {
+          ERC20VotesDelegate: [
+            {
+              id: `1-${TOKEN}-${ALICE}`,
+              chainId: 1,
+              tokenContractAddress: TOKEN,
+              delegateAddress: ALICE,
+              votingPower: '5000000000000000000',
+              delegationCount: 2,
+              firstVotingPowerChangeTimestamp: '1700000000',
+              lastVotingPowerChangeTimestamp: '1700000100',
+            },
+          ],
+          AllERC20VotesDelegate: [{ id: 'a' }],
+          MemberMetrics: [],
+        },
+        {
+          ReverseName: [
+            {
+              address: ALICE,
+              coinType: DEFAULT_EVM_COIN_TYPE,
+              name: 'alice.eth',
+            },
+          ],
+        },
+      ]);
+
+      const response = await controller.getMembership({
+        pluginAddress: PLUGIN,
+        tokenContractAddress: TOKEN,
+        page: 1,
+        pageSize: 15,
+      });
+
+      assert(response.success, 'expected getMembership to succeed');
+      expect(response.result.metadata).toEqual({
+        page: 1,
+        pageSize: 15,
+        totalPages: 1,
+        totalRecords: 1,
+      });
+      expect(response.result.data).toHaveLength(1);
+      expect(response.result.data[0]).toEqual(
+        expect.objectContaining({
+          ens: 'alice.eth',
+          votingPower: '5000000000000000000',
+        }),
+      );
+      expect(response.result.data[0].address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    });
+  });
+
   describe('getMemberProfileTextRecords', () => {
     const textId = (version: string, key: string) =>
       `1-${RESOLVER}-${NODE}-${version}-${key}`;
