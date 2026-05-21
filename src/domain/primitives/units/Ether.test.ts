@@ -28,4 +28,9 @@ describe('Ether', () => {
     const token = Ether.create(value);
     expect(token.toBigNumber()).toEqual(value);
   });
+
+  it('toEther() returns the same instance (identity conversion)', () => {
+    const token = Ether.create(new BigNumber(1.23));
+    expect(token.toEther()).toBe(token);
+  });
 });
