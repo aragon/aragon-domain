@@ -34,7 +34,7 @@ describe('GetERC20MembershipUseCase', () => {
   const buildMockStore = (
     member: TokenVotingMember = buildMember(),
   ): TokenVotingMemberStore => ({
-    findMembersByPluginAndToken: jest
+    findMembersByPluginAndToken: vi
       .fn()
       .mockResolvedValue(createPage([member], 1, 20, 1)),
   });
@@ -87,7 +87,7 @@ describe('GetERC20MembershipUseCase', () => {
 
   it('wraps store errors', async () => {
     const failingStore: TokenVotingMemberStore = {
-      findMembersByPluginAndToken: jest
+      findMembersByPluginAndToken: vi
         .fn()
         .mockRejectedValue(new Error('db down')),
     };

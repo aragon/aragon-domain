@@ -23,6 +23,7 @@ export default defineConfig({
         'src/**/index.ts',
         'src/domain/member-profile/MemberProfileStore.ts',
         'src/domain/primitives/units/EVMUnit.ts',
+        'src/domain/token-voting-member/TokenVotingMemberStore.ts',
       ],
       thresholds: {
         statements: 100,

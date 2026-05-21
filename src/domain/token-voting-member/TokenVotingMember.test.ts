@@ -40,7 +40,10 @@ describe('TokenVotingMember', () => {
   });
 
   it('carries an ENS name when present', () => {
-    const member = TokenVotingMember.create({ ...validProps, ens: 'alice.eth' });
+    const member = TokenVotingMember.create({
+      ...validProps,
+      ens: 'alice.eth',
+    });
     expect(member.ens).toBe('alice.eth');
   });
 

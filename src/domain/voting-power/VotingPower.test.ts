@@ -38,6 +38,11 @@ describe('VotingPower', () => {
     expect(a.equals(b)).toBe(false);
   });
 
+  it('equals(undefined) returns false', () => {
+    const vp = VotingPower.fromBigInt(100n);
+    expect(vp.equals(undefined)).toBe(false);
+  });
+
   it('converts to ether', () => {
     const vp = VotingPower.fromBigInt(1230000000000000000n);
     expect(vp.value.toEther().toBigNumber().toNumber()).toBeCloseTo(1.23);

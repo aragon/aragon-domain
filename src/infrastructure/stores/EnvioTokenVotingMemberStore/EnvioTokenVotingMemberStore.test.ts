@@ -30,15 +30,20 @@ function buildMockEnvioClient(responses: unknown[]): MockClient {
   const calls: QueryCall[] = [];
   const queue = [...responses];
   const envio = {
-    query: jest.fn(async (document: string, variables: Record<string, unknown>) => {
-      calls.push({ document, variables });
-      return queue.shift();
-    }),
+    query: vi.fn(
+      async (document: string, variables: Record<string, unknown>) => {
+        calls.push({ document, variables });
+        return queue.shift();
+      },
+    ),
   } as unknown as EnvioClient;
   return { envio, calls };
 }
 
-const buildDelegate = (address: string, votingPower = '5000000000000000000') => ({
+const buildDelegate = (
+  address: string,
+  votingPower = '5000000000000000000',
+) => ({
   id: `1-${TOKEN}-${address}`,
   chainId: 1,
   tokenContractAddress: TOKEN,
@@ -61,7 +66,11 @@ describe('EnvioTokenVotingMemberStore', () => {
       },
       {
         ReverseName: [
-          { address: ALICE, coinType: DEFAULT_EVM_COIN_TYPE, name: 'alice.eth' },
+          {
+            address: ALICE,
+            coinType: DEFAULT_EVM_COIN_TYPE,
+            name: 'alice.eth',
+          },
         ],
       },
     ]);
@@ -87,7 +96,11 @@ describe('EnvioTokenVotingMemberStore', () => {
       },
       {
         ReverseName: [
-          { address: ALICE, coinType: DEFAULT_EVM_COIN_TYPE, name: 'alice-default.eth' },
+          {
+            address: ALICE,
+            coinType: DEFAULT_EVM_COIN_TYPE,
+            name: 'alice-default.eth',
+          },
           { address: ALICE, coinType: ETH_COIN_TYPE, name: 'alice-legacy.eth' },
         ],
       },
@@ -154,7 +167,7 @@ describe('EnvioTokenVotingMemberStore', () => {
 
   it('wraps query failures with a member-level error', async () => {
     const envio = {
-      query: jest.fn().mockRejectedValue(new Error('graphql exploded')),
+      query: vi.fn().mockRejectedValue(new Error('graphql exploded')),
     } as unknown as EnvioClient;
     const store = new EnvioTokenVotingMemberStore(envio);
 
