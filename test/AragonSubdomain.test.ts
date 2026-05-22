@@ -1,10 +1,6 @@
 import assert from 'node:assert';
 import { AragonSubdomain, EnvioClient } from '../src';
 
-const RESOLVER = '0x231b0ee14048e9dccd1d247744d114a4eb5e8e63';
-const NODE =
-  '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-
 /**
  * Builds an AragonSubdomain backed by an EnvioClient whose `query`
  * method is replaced with a FIFO queue of canned responses. The
@@ -25,9 +21,6 @@ function buildController(responses: unknown[]): AragonSubdomain {
 
 describe('AragonSubdomain', () => {
   describe('getMemberProfileTextRecords', () => {
-    const textId = (version: string, key: string) =>
-      `1-${RESOLVER}-${NODE}-${version}-${key}`;
-
     it('returns the live text records as a DTO list', async () => {
       const controller = buildController([
         {
@@ -38,15 +31,11 @@ describe('AragonSubdomain', () => {
               resolver: {
                 version: '0',
                 texts: [
+                  { key: 'avatar', value: 'ipfs://x', version: '0' },
                   {
-                    id: textId('0', 'avatar'),
-                    key: 'avatar',
-                    value: 'ipfs://x',
-                  },
-                  {
-                    id: textId('0', 'url'),
                     key: 'url',
                     value: 'https://aragon.org',
+                    version: '0',
                   },
                 ],
               },

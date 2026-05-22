@@ -14,9 +14,9 @@ const FIND_TEXT_RECORDS_QUERY = `
       resolver {
         version
         texts {
-          id
           key
           value
+          version
         }
       }
     }
@@ -33,7 +33,8 @@ export class EnvioMemberProfileStore implements MemberProfileStore {
       const raw = await this.envio.query(FIND_TEXT_RECORDS_QUERY, {
         name: subdomain.toString(),
       });
-      return MemberProfileTextRecordMap.mapDTOToDomain(raw);
+      const resolver = MemberProfileTextRecordMap.mapDTOToDomain(raw);
+      return resolver?.liveTextRecords() ?? [];
     } catch (cause) {
       throw new Error('Error querying member profile from Envio', { cause });
     }

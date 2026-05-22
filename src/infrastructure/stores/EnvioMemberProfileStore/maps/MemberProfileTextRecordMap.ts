@@ -1,18 +1,10 @@
 import { z } from 'zod';
-import { MemberProfileTextRecord } from '@/domain/member-profile/MemberProfileTextRecord';
+import { MemberProfileResolver } from '@/domain/member-profile/MemberProfileResolver';
 
-/**
- * Shape of a single text-record row on the indexer.
- *
- * The `id` is structured as
- * `${chainId}-${resolverAddress}-${domainNode}-${version}-${key}`.
- * The first four segments are hyphen-free; the `key` segment (last)
- * may itself contain hyphens.
- */
 const TextRecordRowSchema = z.object({
-  id: z.string(),
   key: z.string(),
   value: z.string().nullable(),
+  version: z.string(),
 });
 
 const ResolverSchema = z.object({
@@ -42,39 +34,27 @@ export type FindMemberProfileTextRecordsResponse = z.infer<
 >;
 
 /**
- * Extracts the `${version}` segment from a TextRecord id. The first
- * four segments (chainId, resolverAddress, domainNode, version) never
- * contain a hyphen, so `split('-')[3]` is safe.
- */
-export function extractVersion(id: string): string {
-  return id.split('-')[3] ?? '';
-}
-
-/**
  * Trust boundary for the indexer's `FindMemberProfileTextRecords`
- * response. Asserts the shape via Zod, filters out cleared rows and
- * rows superseded by `VersionChanged` (kept around on the indexer but
- * logically invalid), and constructs the domain value objects.
+ * response.
  *
- * Throws a `ZodError` if the shape doesn't match what we expect.
+ * Returns `null` when the subdomain is unknown to the indexer or
+ * exists but has no resolver assigned yet.
  */
-export function mapDTOToDomain(raw: unknown): MemberProfileTextRecord[] {
+export function mapDTOToDomain(raw: unknown): MemberProfileResolver | null {
   const parsed = FindMemberProfileTextRecordsResponseSchema.parse(raw);
   const domain = parsed.Domain[0];
 
   // No row for this name on the indexer.
-  if (!domain) return [];
+  if (!domain) return null;
   // Domain exists but `setResolver` has not been called for it yet.
-  if (!domain.resolver) return [];
+  if (!domain.resolver) return null;
 
-  const liveVersion = domain.resolver.version;
-  const live: MemberProfileTextRecord[] = [];
-  for (const text of domain.resolver.texts) {
-    if (text.value === null) continue;
-    if (extractVersion(text.id) !== liveVersion) continue;
-    live.push(
-      MemberProfileTextRecord.create({ key: text.key, value: text.value }),
-    );
-  }
-  return live;
+  return MemberProfileResolver.create({
+    version: domain.resolver.version,
+    entries: domain.resolver.texts.map((text) => ({
+      key: text.key,
+      value: text.value,
+      version: text.version,
+    })),
+  });
 }
