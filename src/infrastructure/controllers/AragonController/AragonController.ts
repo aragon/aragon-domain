@@ -19,9 +19,15 @@ interface HandlersRecord {
   >;
 }
 
+/**
+ * General domain for all Aragon-related business logic.
+ */
 export class AragonController {
   private constructor(private readonly handlers: HandlersRecord) {}
 
+  /**
+   * Initializes the `AragonSubdomain`.
+   */
   static load(envioClient: EnvioClient): AragonController {
     const memberProfileStore = new EnvioMemberProfileStore(envioClient);
     const getMemberProfileTextRecordsUseCase =
