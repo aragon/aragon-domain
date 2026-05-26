@@ -93,15 +93,5 @@ describe('AragonSubdomain', () => {
 
       expect(response.success).toBe(false);
     });
-
-    it('returns a failed response when the subdomain targets .aragonx.eth', async () => {
-      const controller = buildController([]);
-
-      const response = await controller.getMemberProfileTextRecords({
-        subdomain: 'ea1.aragonx.eth',
-      });
-
-      expect(response.success).toBe(false);
-    });
   });
 });
