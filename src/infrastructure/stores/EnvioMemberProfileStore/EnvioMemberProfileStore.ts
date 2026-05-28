@@ -11,12 +11,8 @@ import * as MemberProfileTextRecordMap from './maps/MemberProfileTextRecordMap';
 const FIND_TEXT_RECORDS_QUERY = `
   query FindMemberProfileTextRecords($name: String!) {
     Domain(where: { name: { _eq: $name } }, limit: 1) {
-      id
-      name
       resolver {
-        version
         texts {
-          id
           key
           value
         }

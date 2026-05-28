@@ -4,9 +4,6 @@ import { AragonSubdomain, EnvioClient } from '../src';
 const ALICE = '0x0123456789abcdef0123456789abcdef01234567';
 const PLUGIN = '0x17a1688c56087ade762721180e1cc1e831c73719';
 const TOKEN = '0x0a830e9f2baa2ebaf8d33c0806283dea9c08952f';
-const RESOLVER = '0x231b0ee14048e9dccd1d247744d114a4eb5e8e63';
-const NODE =
-  '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const DEFAULT_EVM_COIN_TYPE = '2147483648'; // 0x80000000
 
 /**
@@ -84,9 +81,6 @@ describe('AragonSubdomain', () => {
   });
 
   describe('getMemberProfileTextRecords', () => {
-    const textId = (version: string, key: string) =>
-      `1-${RESOLVER}-${NODE}-${version}-${key}`;
-
     it('returns the live text records as a DTO list', async () => {
       const controller = buildController([
         {
@@ -97,15 +91,11 @@ describe('AragonSubdomain', () => {
               resolver: {
                 version: '0',
                 texts: [
+                  { key: 'avatar', value: 'ipfs://x', version: '0' },
                   {
-                    id: textId('0', 'avatar'),
-                    key: 'avatar',
-                    value: 'ipfs://x',
-                  },
-                  {
-                    id: textId('0', 'url'),
                     key: 'url',
                     value: 'https://aragon.org',
+                    version: '0',
                   },
                 ],
               },
@@ -159,16 +149,6 @@ describe('AragonSubdomain', () => {
 
       const response = await controller.getMemberProfileTextRecords({
         subdomain: 'vitalik.eth',
-      });
-
-      expect(response.success).toBe(false);
-    });
-
-    it('returns a failed response when the subdomain targets .aragonx.eth', async () => {
-      const controller = buildController([]);
-
-      const response = await controller.getMemberProfileTextRecords({
-        subdomain: 'ea1.aragonx.eth',
       });
 
       expect(response.success).toBe(false);

@@ -1,145 +1,94 @@
 # AGENTS.md — Aragon Subdomain
 
-## What This Repo Is
+Business logic package between the Envio indexer (`aragon-indexer/`) and the Next.js BFF. Built on [`ddd-core-ts`](https://github.com/asciiman/ddd-core-ts).
 
-This package encapsulates all governance business logic for the Aragon platform. It replaces business logic currently fragmented across `app-backend` (Node.js) and `app` (Next.js frontend), consolidating it into a single importable TypeScript package.
+## Read `ddd-core-ts` first
 
-The package sits between the Envio on-chain indexer (`aragon-indexer/`) and the Next.js BFF layer. It queries indexed data from Envio, applies domain logic (membership aggregation, voting power calculation, permission checks), enriches with external data (ENS, token prices), and exposes use cases via a controller.
+**Before writing any code, read the `ddd-core-ts` package README.** It defines the base classes (`ValueObject`, `Entity`, `UseCase`, `DomainError`, `DomainEvent`, `ProcessManager`), the store/repository pattern, the mapper and DTO conventions, the `handleRequest` controller wiring, Zod-at-creation validation, and `ResultOrError` / `defineError` error handling. Every domain object, use case, store, and controller in this repo must conform. Do not invent alternative patterns.
 
-## How to Approach This Repo
+Domain terminology comes from the [Aragon Governance Membership Domain Model](https://www.figma.com/board/WTlB4By8MoKhh5BJ58dpVE/Aragon-Governance---Membership-Domain-Model) — use those names, not legacy names from `app-backend` or `ve-governance-indexer`.
 
-### Read `ddd-core-ts` first
-
-This repo is built on [`ddd-core-ts`](https://github.com/asciiman/ddd-core-ts). **Before writing any code, read the `ddd-core-ts` package README thoroughly.** It defines the specific patterns, base classes, naming conventions, and architectural rules that this repo must follow. Key things it covers:
-
-- `ValueObject`, `Entity`, `UseCase`, `DomainError`, `DomainEvent`, `ProcessManager` base classes
-- Store (repository) pattern: interface in domain, implementation in infrastructure
-- Mapper and DTO conventions
-- `handleRequest` controller wiring
-- Zod validation at domain object creation
-- Error handling with `ResultOrError` and `defineError`
-
-Every domain object, use case, store, and controller in this repo must conform to the `ddd-core-ts` patterns. Do not invent alternative patterns.
-
-### Follow the domain model diagram
-
-The [Aragon Governance Membership Domain Model](https://www.figma.com/board/WTlB4By8MoKhh5BJ58dpVE/Aragon-Governance---Membership-Domain-Model) is the source of truth for naming and relationships. Use the terms from the diagram, not from legacy codebases (`app-backend`, `ve-governance-indexer`). Those are being deprecated.
-
-Key domain concepts from the diagram:
-
-- **Governance Plugin** — decides via votes, has Membership
-- **Membership** — contains multiple Members
-- **Member** — has Identity (ENS, avatar), Metrics, and Voting Power
-- **Voting Power** — provided by different mechanisms depending on governance type
-- **TokenVoting Delegation** — ERC20Votes: DelegateChanged, DelegateVotesChanged (all-or-nothing balance delegation)
-- **VotingEscrow Delegation** — per-lock NFT delegation via EscrowIVotesAdapter
-- Both TokenVoting Delegation and VotingEscrow Delegation provide VP to the TokenVoting Plugin
-
-### Architecture layers
+## Repo map
 
 ```
 src/
-├── domain/          # Pure business logic — no I/O, no infrastructure imports
-├── use-cases/       # Application logic — orchestrates domain objects
-└── infrastructure/  # Adapters — Envio client, ENS resolver, RPC readers, controllers
+├── domain/          # Pure business logic — no I/O. Only depends on ddd-core-ts and zod.
+├── use-cases/       # Application logic — orchestrates domain objects.
+└── infrastructure/  # Adapters — Envio client, controllers, stores, mappers.
 ```
 
-Dependencies flow inward: Infrastructure → Use Cases → Domain. The domain layer has zero external dependencies beyond `ddd-core-ts` and `zod`.
+Dependencies flow inward: Infrastructure → Use Cases → Domain.
 
-### Project structure within each layer
+- **Path alias:** `@/*` resolves to `src/*` (see `tsconfig.json`). Always import as `@/domain/...`, never relative.
+- **Public surface:** `src/index.ts` exports `AragonSubdomain` (the controller) and `EnvioClient`. That's the entire consumer-facing API.
+- **Scripts:** `pnpm run build | test | lint | type-check`. Lint auto-formats via biome.
 
-Follow the `ddd-core-ts` project structure conventions.
+Today the domain implements only `MemberProfile` (ENS text records on `.aragon.eth` subdomains). Other concepts (`Member`, `Membership`, `VotingPower`, `Delegation`, `Lock`, etc.) are planned — see `ENVIO_MIGRATION_PLAN.md`. Do not assume they exist.
 
-## Formatting Rules
+## Canonical examples
 
-1. **Indent with 2 spaces.** Configured via biome (`indentWidth: 2`). Run `pnpm run lint` to auto-format.
-2. **JSDoc comments use multi-line format:**
-   ```typescript
-   /**
-    * My comment
-    */
-   ```
-   Never use single-line JSDoc (`/** My comment */`).
-3. **Test files are colocated** with the source files they test: `Member.ts` → `Member.test.ts` in the same directory. Not in a separate `test/` folder.
+When in doubt, copy the shape of these files:
+
+| Concern | File |
+|---------|------|
+| Controller + `handleRequest` wiring | `src/infrastructure/controllers/AragonController/AragonController.ts` |
+| Store-side mapper (Zod trust boundary) | `src/infrastructure/stores/EnvioMemberProfileStore/maps/MemberProfileTextRecordMap.ts` |
+| Use case (single `execute()`, `code` field) | `src/use-cases/GetMemberProfileTextRecordsUseCase.ts` |
+| Value object with Zod-at-`create()` | `src/domain/member-profile/MemberProfileTextRecord.ts` |
+| Store interface in domain | `src/domain/member-profile/MemberProfileStore.ts` |
 
 ## Primitives
 
-The `src/domain/primitives/` directory contains reusable domain primitives. Always use these instead of raw types:
+Reusable domain primitives live in `src/domain/primitives/` and are re-exported from the barrel `@/domain/primitives`. Use these instead of raw types.
 
-| Primitive | Use instead of | Import from |
-|-----------|---------------|-------------|
-| `Address` | `string` for Ethereum addresses | `@/domain/primitives` |
-| `HexString` | `string` for 0x-prefixed hex values | `@/domain/primitives` |
-| `HexNumber` | `string` or `bigint` for hex-encoded numbers | `@/domain/primitives` |
-| `Wei` / `Gwei` / `Ether` | `BigNumber` for EVM unit values | `@/domain/primitives` |
-| `UUID` | `string` for UUIDs | `@/domain/primitives` |
-| `Page<T>` / `PageRequest` | ad-hoc pagination shapes | `@/domain/primitives` |
+| Primitive | Use instead of | Notes |
+|-----------|---------------|-------|
+| `Address` | `string` for Ethereum addresses | Build via `Address.fromHexString(hex)` |
+| `HexString` | `string` for 0x-prefixed hex | Use as parameter type to catch invalid input at compile time |
+| `HexNumber` | `string` / `bigint` for hex-encoded numbers | |
+| `Wei` / `Gwei` / `Ether` | `BigNumber` for EVM unit values | |
+| `UUID` | `string` for UUIDs | |
+| `Page<T>` / `PageRequest` | ad-hoc pagination shapes | |
 
-**Rules:**
-- **Use `Address` for all Ethereum addresses** in domain objects and use cases. Never store addresses as raw strings in domain types.
-- **Use `HexString` as the parameter type** for functions that accept 0x-prefixed hex strings (e.g., `Address.fromHexString(hex: HexString)`). This catches invalid inputs at compile time.
-- **Cast to `HexString` at infrastructure boundaries** where external data enters as `string` (e.g., DTOs from Envio). Use `as HexString` in mappers — the runtime validation happens inside the primitive's factory method.
-- **Serialize via `.toHexString()`** when converting domain objects to DTOs for external consumers.
-- Import primitives from the barrel `@/domain/primitives`, not from individual files.
+At infrastructure boundaries where external data enters as `string` (DTOs from Envio), cast with `as HexString` inside mappers — the runtime check happens in the primitive's factory. Serialize back out with `.toHexString()`.
 
-## Key Rules
+## Conventions
 
-1. **Domain objects use Zod validation** in their `create()` factory methods. No invalid objects can exist.
-2. **Value objects are immutable.** Use copy-and-modify patterns for state changes.
-3. **Use cases have a single `execute()` method** and a `code` string matching the class name.
-4. **Store interfaces live in the domain layer.** Implementations live in infrastructure.
-5. **All dependencies are constructor-injected.** No singletons, no service locator.
-6. **Mappers are co-located** with the infrastructure code that uses them, not in the domain.
-7. **One public class per file.** Filename matches the class name.
-8. **No `I` prefix on interfaces.** Use `MemberStore`, not `IMemberStore`.
-9. **`as const` over TypeScript enums.**
-10. **Named exports only.** No default exports.
+| Rule | Why it matters |
+|------|----------------|
+| One public class per file; filename matches class name | Grep-ability; ddd-core-ts module-discovery assumptions |
+| Named exports only | No default exports anywhere |
+| `as const` over TypeScript `enum` | |
+| No `I` prefix on interfaces (`MemberStore`, not `IMemberStore`) | |
+| All dependencies constructor-injected; no singletons | |
+| Domain objects validate via Zod inside `create()` | Invalid objects cannot exist |
+| Value objects are immutable; copy-and-modify for state changes | |
+| Use cases expose a single `execute()` and a `code` string matching the class name | `handleRequest` dispatch |
+| Store interfaces live in domain; implementations in infrastructure | |
+| Mappers co-located with the infrastructure code that uses them | Not in `domain/` |
+| Tests colocated next to source (`Member.ts` → `Member.test.ts`) | Not in a separate `test/` folder |
+| 2-space indent; multi-line JSDoc only (`/**\n * ...\n */`) | Enforced by biome |
 
-## Data Sources
+## Mappers (the trust boundary)
 
-The primary data source is the Envio indexer (`aragon-indexer/`), which is partitioned internally into a generic / Aragon split (see `aragon-indexer/CLAUDE.md` → "Split path"):
+`EnvioClient.query` returns `unknown`. Stores never declare DTO interfaces inline and never pass a type argument to `query`. The store's job is orchestration (form variables, call client, combine results, wrap errors). Shape assertions and DTO → domain conversion happen exclusively in mappers.
 
-Generic (chain-wide ERC20Votes):
-- `ERC20VotesDelegate` — per-(token, delegate) state: voting power, delegationCount, first/lastVotingPowerChangeTimestamp
-- `Delegation` — per-(token, delegator) → currentDelegate
+Each mapper module owns:
 
-Aragon-specific:
-- `Plugin` — Installed governance plugins (type, associated contracts)
-- `VELock` — Voting escrow lock positions (amount, status, delegation)
-- `MemberMetrics` — In-plugin engagement (VoteCast / ProposalCreated activity only)
+1. Zod schemas describing the response, with TypeScript types derived via `z.infer<...>` — the schema is the single source of truth.
+2. A conversion function named exactly **`mapDTOToDomain(raw: unknown)`** (DTO → domain) or **`mapDomainToDTO(...)`** (domain → DTO). These names are load-bearing — `handleRequest` looks them up on controller-side mapper modules by name, so the convention is non-negotiable everywhere.
+3. A `.parse()` call as the first line. Parse failures become descriptive runtime errors when the indexer's response shape drifts.
 
-`EnvioTokenVotingMemberStore.findMembersByPluginAndToken` is the join point between the two halves: it pulls `ERC20VotesDelegate` rows and `MemberMetrics` rows in one query and merges activity timestamps client-side via `min`/`max`. If the indexer is ever split into two separate Envio projects, this is the file that gets a second `EnvioClient` argument and runs two queries instead of one — no other code change required.
+Auxiliary helpers within a mapper (private parsers, ID extractors) keep descriptive names — the rule applies to the conversion function the rest of the codebase calls.
 
-Infrastructure adapters query this data via Envio's GraphQL/SQL API. Additional data comes from:
-- ENS resolution (name, avatar)
-- On-chain RPC reads (real-time token balance, current voting power)
-- Token price feeds (USD conversion)
-
-## Mapper function naming
-
-Every mapper module — controller-side and store-side — exposes its mapping conversion under one of two canonical names:
-
-- `mapDTOToDomain(...)` for the DTO → domain direction.
-- `mapDomainToDTO(...)` for the domain → DTO direction.
-
-These names match what `ddd-core-ts`'s `handleRequest` looks up on controller-side mapper modules, so using them everywhere also keeps the controller and store layers consistent. Auxiliary helpers within a mapper (private parsers, ID-extraction utilities, etc.) keep descriptive names — the rule applies to the conversion function the rest of the codebase calls.
-
-## GraphQL response handling
-
-Anything returned by `EnvioClient.query` is `unknown`. The store's job is orchestration — form variables, call the client, hand the raw response off, combine results across queries, wrap errors. Shape assertions and DTO → domain conversion happen in mappers, which are the single trust boundary for indexer data.
-
-Each query has a corresponding mapper module under the store's `maps/` directory. The mapper owns:
-
-1. Zod schemas describing the expected response shape, with TypeScript types derived from those schemas via `z.infer<...>` so the schema is the single source of truth.
-2. A `mapDTOToDomain(raw: unknown)` function that calls `.parse()` on the raw input and returns the domain objects. The Zod parse failure becomes a descriptive runtime error if the indexer's response shape ever drifts.
-3. DTO → domain mapping. When the mapper passes raw inputs into a domain factory (`Address.fromHexString`, `TokenVotingMember.create`, etc.), the factory's own validation is the final shape check on the values inside the response.
-
-Stores never declare DTO interfaces inline and never pass a type argument to `query`. Calling `await this.envio.query(QUERY, vars)` produces `unknown`; that goes straight into the mapper's `mapDTOToDomain` function.
+Reference: `src/infrastructure/stores/EnvioMemberProfileStore/maps/MemberProfileTextRecordMap.ts`.
 
 ## Testing
 
-- Unit tests for domain logic (value objects, aggregates, pure functions)
-- Unit tests for use cases with mocked store interfaces
-- Integration tests for infrastructure adapters
-- Test files colocated: `Member.ts` → `Member.test.ts`
-- Use domain factory methods (`Member.create(...)`) to build test data
+- Unit-test domain logic and use cases (with mocked store interfaces); integration-test infrastructure adapters.
+- Build test data with the domain factory methods (`MemberProfileTextRecord.create(...)`), not by hand-constructing objects — invalid shapes won't even compile.
+
+## Data sources
+
+Primary: the Envio indexer (`aragon-indexer/`). See `aragon-indexer/AGNETS.md` for entity schemas — do not duplicate them here.
+Secondary: ENS resolution (name, avatar), on-chain RPC reads, token price feeds.

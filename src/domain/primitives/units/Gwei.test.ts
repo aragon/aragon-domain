@@ -48,9 +48,4 @@ describe('Gwei', () => {
     const token = Gwei.create(new BigNumber(1_230_000_000));
     expect(token.toGwei()).toBe(token);
   });
-
-  it('deserialize() parses a decimal string', () => {
-    const token = Gwei.deserialize('1230000000');
-    expect(token.toBigNumber().toNumber()).toEqual(1_230_000_000);
-  });
 });

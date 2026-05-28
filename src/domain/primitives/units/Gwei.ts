@@ -55,9 +55,4 @@ export class Gwei extends ValueObject<GweiProps> implements EVMUnit {
   public static create(gweiValue: BigNumber): Gwei {
     return new Gwei({ gweiValue });
   }
-
-  public static deserialize(gweiValue: string): Gwei {
-    const gweiValueBN = new BigNumber(gweiValue);
-    return Gwei.create(gweiValueBN);
-  }
 }
