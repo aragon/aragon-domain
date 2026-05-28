@@ -4,7 +4,7 @@ import { zExtended } from '../validation';
 import type { HexString } from '../validation/ZodHexString';
 
 const HexNumberPropsSchema = z.object({
-  hexNumberValue: zExtended.hexString()
+  hexNumberValue: zExtended.hexString(),
 });
 
 type HexNumberProps = z.infer<typeof HexNumberPropsSchema>;

@@ -31,7 +31,9 @@ export type FindMemberProfileTextRecordsResponse = z.infer<
 export function mapDTOToDomain(raw: unknown): MemberProfileTextRecord[] {
   const parsed = FindMemberProfileTextRecordsResponseSchema.parse(raw);
   const domain = parsed.Domain[0];
-  if (!domain?.resolver) return [];
+  if (!domain?.resolver) {
+    return [];
+  }
 
   return domain.resolver.texts.map((text) =>
     MemberProfileTextRecord.create({
