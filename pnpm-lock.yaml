@@ -24,7 +24,7 @@ importers:
         specifier: 0.9.3
         version: 0.9.3
       viem:
-        specifier: ^2.51.3
+        specifier: 2.51.3
         version: 2.51.3(typescript@5.4.5)(zod@3.23.0)
       zod:
         specifier: 3.23.0
