@@ -1,14 +1,10 @@
 import { ValueObject } from 'ddd-core-ts';
 import { z } from 'zod';
-import { assertHexString, type HexString } from '../validation/ZodHexString';
+import { zExtended } from '../validation';
+import type { HexString } from '../validation/ZodHexString';
 
 const HexNumberPropsSchema = z.object({
-  hexNumberValue: z
-    .string()
-    .refine(
-      (value) => typeof value === 'string' && /^0x[0-9a-fA-F]*$/.test(value),
-      'hexNumberValue must be a 0x-prefixed hex string and not undefined',
-    ),
+  hexNumberValue: zExtended.hexString()
 });
 
 type HexNumberProps = z.infer<typeof HexNumberPropsSchema>;
@@ -53,10 +49,6 @@ export class HexNumber extends ValueObject<HexNumberProps> {
 
   public static create(props: HexNumberProps): HexNumber {
     const validatedProps = HexNumberPropsSchema.parse(props);
-    assertHexString(
-      validatedProps.hexNumberValue,
-      'hexNumberValue must be a 0x-prefixed hex string',
-    );
     return new HexNumber(validatedProps);
   }
 

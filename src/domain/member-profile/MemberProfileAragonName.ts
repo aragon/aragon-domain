@@ -1,14 +1,21 @@
 import { ValueObject } from 'ddd-core-ts';
+import { normalize as ensNormalize } from 'viem/ens';
 import { z } from 'zod';
 
 const PARENT_DOMAIN = 'aragon.eth';
 const PARENT_SUFFIX = `.${PARENT_DOMAIN}` as const;
 
 /**
- * Normalizes a raw name input into its canonical form.
+ * Normalizes a raw name input to its ENSIP-15 canonical form.
+ *
+ * Surrounding whitespace is trimmed before normalization as a form-input
+ * convenience — `viem.normalize` itself treats whitespace as a disallowed
+ * character. Everything downstream (case folding, NFC composition, banned
+ * characters, confusable scripts, ZWJ/emoji rules) is delegated to viem's
+ * ENSIP-15 implementation.
  */
 function canonicalize(input: string): string {
-  return input.normalize('NFC').trim().toLowerCase();
+  return ensNormalize(input.trim());
 }
 
 const MemberProfileAragonNamePropsSchema = z

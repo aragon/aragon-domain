@@ -1,4 +1,3 @@
-import assert from 'node:assert';
 import { ValueObject } from 'ddd-core-ts';
 import { keccak256 } from 'js-sha3';
 import { z } from 'zod';
@@ -49,13 +48,7 @@ export class Address extends ValueObject<AddressProps> {
 
   public static create(props: AddressProps): Address {
     const validatedProps = AddressPropsSchema.parse(props);
-    const { addressValue } = validatedProps;
-    const byteLength = addressValue.getByteLength();
-    assert(
-      byteLength === 20,
-      `addressValue must be 20 bytes. Got ${byteLength}`,
-    );
-    return new Address(props);
+    return new Address(validatedProps);
   }
 
   /**

@@ -34,6 +34,27 @@ export class Wei extends ValueObject<WeiProps> implements EVMUnit {
     return Ether.create(etherValue);
   }
 
+  /**
+   * Adds this value to another value.
+   * @param other The other value to add to.
+   */
+  public plus(other: Wei): Wei {
+    const thisValue = this.props.weiValue;
+    const otherValue = other.toBigNumber();
+    const totalValue = thisValue.plus(otherValue);
+    return Wei.create(totalValue);
+  }
+
+  /**
+   * Multiplies our value in wei with a big number. Returns the value in Wei.
+   * @param bigNumber The big number to multiply our value with.
+   */
+  public times(bigNumber: BigNumber): Wei {
+    const thisValue = this.props.weiValue;
+    const totalValue = thisValue.times(bigNumber);
+    return Wei.create(totalValue);
+  }
+
   public static create(weiValue: BigNumber): Wei {
     return new Wei({ weiValue });
   }

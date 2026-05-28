@@ -31,6 +31,27 @@ export class Ether extends ValueObject<EtherProps> implements EVMUnit {
     return this;
   }
 
+  /**
+   * Adds this value to another value.
+   * @param other The other value to add to.
+   */
+  public plus(other: Ether): Ether {
+    const thisValue = this.props.etherValue;
+    const otherValue = other.toBigNumber();
+    const totalValue = thisValue.plus(otherValue);
+    return Ether.create(totalValue);
+  }
+
+  /**
+   * Multiplies our value in ether with a big number. Returns the value in Ether.
+   * @param bigNumber The big number to multiply our value with.
+   */
+  public times(bigNumber: BigNumber): Ether {
+    const thisValue = this.props.etherValue;
+    const totalValue = thisValue.times(bigNumber);
+    return Ether.create(totalValue);
+  }
+
   public static create(etherValue: BigNumber): Ether {
     return new Ether({ etherValue });
   }
