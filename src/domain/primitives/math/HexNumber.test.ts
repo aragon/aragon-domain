@@ -45,7 +45,8 @@ describe('HexNumber', () => {
   it('throws an error when an invalid hex number is created', () => {
     const invalidProps = {
       hexNumberValue: 'invalid_hex_string',
-    };
+    // biome-ignore lint/suspicious/noExplicitAny: testing illegal arg
+    } as any;
 
     expect(() => HexNumber.create(invalidProps)).toThrow();
   });
