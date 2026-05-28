@@ -8,8 +8,7 @@ export interface MemberProfileStore {
    * Returns an empty array when:
    *   - the subdomain is unknown to the indexer
    *   - the subdomain exists but has no resolver attached yet
-   *   - the resolver has no current text records (all cleared or
-   *     superseded by a `VersionChanged` bump)
+   *   - the resolver has no text records
    */
   findTextRecordsBySubdomain(
     subdomain: MemberProfileAragonName,

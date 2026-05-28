@@ -35,10 +35,9 @@ describe('EnvioMemberProfileStore', () => {
         Domain: [
           {
             resolver: {
-              version: '0',
               texts: [
-                { key: 'avatar', value: 'ipfs://x', version: '0' },
-                { key: 'url', value: 'https://aragon.org', version: '0' },
+                { key: 'avatar', value: 'ipfs://x' },
+                { key: 'url', value: 'https://aragon.org' },
               ],
             },
           },

@@ -6,32 +6,46 @@ describe('mapDTOToDomain', () => {
     expect(() => mapDTOToDomain(null)).toThrow();
   });
 
-  it('returns null when the indexer has no Domain row for this name', () => {
-    expect(mapDTOToDomain({ Domain: [] })).toBeNull();
+  it('returns [] when the indexer has no Domain row for this name', () => {
+    expect(mapDTOToDomain({ Domain: [] })).toEqual([]);
   });
 
-  it('returns null when the Domain exists but has no resolver yet', () => {
-    expect(mapDTOToDomain({ Domain: [{ resolver: null }] })).toBeNull();
+  it('returns [] when the Domain exists but has no resolver yet', () => {
+    expect(mapDTOToDomain({ Domain: [{ resolver: null }] })).toEqual([]);
   });
 
-  it('builds a MemberProfileResolver carrying the resolver version + entries', () => {
-    const resolver = mapDTOToDomain({
+  it('maps each row in the response to a MemberProfileTextRecord', () => {
+    const records = mapDTOToDomain({
       Domain: [
         {
           resolver: {
-            version: '0',
             texts: [
-              { key: 'avatar', value: 'ipfs://x', version: '0' },
-              { key: 'url', value: 'https://aragon.org', version: '0' },
+              { key: 'avatar', value: 'ipfs://x' },
+              { key: 'url', value: 'https://aragon.org' },
             ],
           },
         },
       ],
     });
 
-    expect(resolver).not.toBeNull();
-    expect(resolver?.version).toBe('0');
-    const live = resolver?.liveTextRecords() ?? [];
-    expect(live.map((r) => r.key)).toEqual(['avatar', 'url']);
+    expect(records).toHaveLength(2);
+    expect(records[0].key).toBe('avatar');
+    expect(records[0].value).toBe('ipfs://x');
+    expect(records[1].key).toBe('url');
+    expect(records[1].value).toBe('https://aragon.org');
+  });
+
+  it('propagates MemberProfileTextRecord validation errors (e.g. empty key)', () => {
+    expect(() =>
+      mapDTOToDomain({
+        Domain: [
+          {
+            resolver: {
+              texts: [{ key: '', value: 'x' }],
+            },
+          },
+        ],
+      }),
+    ).toThrow();
   });
 });
