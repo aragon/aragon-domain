@@ -11,7 +11,7 @@ export class UUID extends ValueObject<UUIDProps> {
   /**
    * @returns A lower case string representation of the UUID.
    */
-  public getValue(): string {
+  public toString(): string {
     return this.props.uuidValue.toLowerCase();
   }
 
