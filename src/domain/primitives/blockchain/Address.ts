@@ -8,7 +8,7 @@ const AddressPropsSchema = z.object({
   addressValue: z
     .instanceof(HexNumber)
     .refine(
-      (value) => value.getByteLength() === 20,
+      (value) => value.hasByteLength(20),
       'addressValue must be 20 bytes',
     ),
 });

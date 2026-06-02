@@ -28,16 +28,14 @@ export class HexNumber extends ValueObject<HexNumberProps> {
   }
 
   /**
-   * @returns The number of bytes represented by the hex string.
+   * @param byteLength The expected number of bytes.
+   * @returns True only when the hex represents exactly `byteLength` whole
+   * bytes (i.e. `byteLength * 2` hex digits). Odd-length values never match,
+   * so a partial nibble cannot be silently padded into a valid length.
    */
-  public getByteLength(): number {
+  public hasByteLength(byteLength: number): boolean {
     const hex = this.props.hexNumberValue.replace(/^0x/, '');
-    if (hex.length === 0) {
-      return 0;
-    }
-    // Pad to even length, then divide by 2 (2 hex chars = 1 byte)
-    const padded = hex.length % 2 === 0 ? hex : `0${hex}`;
-    return padded.length / 2;
+    return hex.length === byteLength * 2;
   }
 
   public equals(other: HexNumber): boolean {
