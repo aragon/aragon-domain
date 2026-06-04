@@ -26,7 +26,9 @@
     "test": "vitest run --coverage",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
-    "changeset": "changeset"
+    "changeset": "changeset",
+    "version": "changeset version && pnpm dlx prettier --write CHANGELOG.md --print-width 9999999",
+    "release": "pnpm build && changeset publish"
   },
   "repository": {
     "type": "git",

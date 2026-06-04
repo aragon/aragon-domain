@@ -65,9 +65,23 @@ Scope is tracked against the [Aragon Governance Membership Domain Model](https:/
 
 ## Development
 
-### Publishing a snapshot release to npm
+### Doing a production release
 
-Snapshot releases let you test unreleased changes from a branch on npm without cutting a real version. The flow uses [Changesets](https://github.com/changesets/changesets) and a manually-dispatched GitHub Actions workflow.
+Releases are driven by [Changesets](https://github.com/changesets/changesets) through a pull request. Do not a version bump directly to `main`.
+
+1. **Add a changeset** with your change and merge it to `main` as usual:
+
+   ```bash
+   pnpm changeset
+   ```
+
+2. **Review the "Version Packages" PR.** The `Library Release` workflow detects the pending changeset on `main` and opens (or updates) a `chore: version packages` PR that bumps the version and regenerates the `CHANGELOG`.
+
+3. **Merge the Version PR.** Once it lands on `main` with no changesets left, the same workflow builds, publishes to npm, pushes the tag, and creates the GitHub release.
+
+### Publishing a snapshot release to npmjs
+
+Snapshot releases let you test unreleased changes from a branch on npmjs without cutting a real version. The flow uses [Changesets](https://github.com/changesets/changesets) and a manually-dispatched GitHub Actions workflow.
 
 1. **Add a changeset locally** describing the change:
 
@@ -77,9 +91,9 @@ Snapshot releases let you test unreleased changes from a branch on npm without c
 
    Pick the bump type and write a short summary. Commit the generated file under `.changeset/` and push your branch.
 
-2. **Run the snapshot workflow.** On GitHub, go to *Actions → Library Snapshot → Run workflow* and select your branch. The workflow builds the package, runs `pnpm changeset version --snapshot`, and publishes to npm under a per-run dist-tag (`snapshot-<run-id>`).
+2. **Run the snapshot workflow.** On GitHub, go to *Actions → Library Snapshot → Run workflow* and select your branch. The workflow builds the package, runs `pnpm changeset version --snapshot`, and publishes to npmjs under a per-run dist-tag (`snapshot-<run-id>`).
 
-3. **Install the snapshot** in a consumer — the exact command also appears in the workflow run's summary:
+3. **Install the snapshot** in a consumer. The exact command also appears in the workflow run's summary:
 
    ```bash
    pnpm add @aragon/aragon-subdomain@snapshot-<run-id>
