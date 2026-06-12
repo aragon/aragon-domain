@@ -4,9 +4,9 @@ describe('UUID', () => {
   const validUUIDValue = '123e4567-e89b-12d3-a456-426614174000';
   const anotherValidUUIDValue = '123e4567-e89b-12d3-a456-426614174001';
 
-  it('getValue returns a lowercase string representation of the UUID', () => {
+  it('toString returns a lowercase string representation of the UUID', () => {
     const uuid = UUID.create({ uuidValue: validUUIDValue.toUpperCase() });
-    expect(uuid.getValue()).toBe(validUUIDValue.toLowerCase());
+    expect(uuid.toString()).toBe(validUUIDValue.toLowerCase());
   });
 
   describe('equals method', () => {
@@ -27,7 +27,7 @@ describe('UUID', () => {
     it('creates a UUID instance with valid props', () => {
       const uuid = UUID.create({ uuidValue: validUUIDValue });
       expect(uuid).toBeInstanceOf(UUID);
-      expect(uuid.getValue()).toBe(validUUIDValue.toLowerCase());
+      expect(uuid.toString()).toBe(validUUIDValue.toLowerCase());
     });
 
     it('throws an error with invalid props', () => {

@@ -51,10 +51,20 @@ describe('HexNumber', () => {
     expect(() => HexNumber.create(invalidProps)).toThrow();
   });
 
-  it('returns the correct byte length', () => {
-    const byteLength = hexNumber.getByteLength();
+  it('matches the exact byte length', () => {
+    // '0x123456' is 6 hex digits = 3 bytes
+    expect(hexNumber.hasByteLength(3)).toBe(true);
+    expect(hexNumber.hasByteLength(2)).toBe(false);
+    expect(hexNumber.hasByteLength(4)).toBe(false);
+  });
 
-    expect(byteLength).toBe(3);
+  it('rejects odd-length hex rather than padding it into a valid byte length', () => {
+    // 39 hex digits: would pad to 20 bytes, but is not a whole 20-byte value
+    const oddHex = HexNumber.create({
+      hexNumberValue: `0x${'a'.repeat(39)}`,
+    });
+
+    expect(oddHex.hasByteLength(20)).toBe(false);
   });
 
   it('checks equality between two HexNumber instances and ignores the alphabetic case', () => {
@@ -78,7 +88,7 @@ describe('HexNumber', () => {
     expect(hexNumberZero.toHexString()).toBe('0x');
     expect(hexNumberZero.toBigint()).toBe(0n);
 
-    expect(hexNumberZero.getByteLength()).toBe(0);
+    expect(hexNumberZero.hasByteLength(0)).toBe(true);
     expect(
       hexNumberZero.equals(HexNumber.create({ hexNumberValue: '0x' })),
     ).toBe(true);
@@ -93,7 +103,8 @@ describe('HexNumber', () => {
     expect(hexNumberZero.toHexString()).toBe('0x0');
     expect(hexNumberZero.toBigint()).toBe(0n);
 
-    expect(hexNumberZero.getByteLength()).toBe(1);
+    // 1 hex digit is an odd nibble, not a whole byte
+    expect(hexNumberZero.hasByteLength(1)).toBe(false);
     expect(
       hexNumberZero.equals(HexNumber.create({ hexNumberValue: '0x0' })),
     ).toBe(true);
@@ -108,7 +119,8 @@ describe('HexNumber', () => {
     expect(hexNumberZero.toHexString()).toBe('0x000');
     expect(hexNumberZero.toBigint()).toBe(0n);
 
-    expect(hexNumberZero.getByteLength()).toBe(2);
+    // 3 hex digits is an odd nibble count, not a whole number of bytes
+    expect(hexNumberZero.hasByteLength(2)).toBe(false);
     expect(
       hexNumberZero.equals(HexNumber.create({ hexNumberValue: '0x000' })),
     ).toBe(true);

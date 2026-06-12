@@ -1,3 +1,9 @@
+/**
+ * A page of items.
+ *
+ * Note: If new items are added while pages are being read, records may shift between pages,
+ * potentially resulting in duplicates or missed items across requests.
+ */
 export interface Page<T> {
   items: T[];
   page: number;

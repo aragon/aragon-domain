@@ -34,6 +34,30 @@ describe('Address', () => {
     );
   });
 
+  it('throws for a 39 hex-digit value that would pad into 20 bytes', () => {
+    const tooShortAddressValue = HexNumber.create({
+      hexNumberValue: `0x${'a'.repeat(39)}`,
+    });
+    const createAddressWithInvalidProp = () =>
+      Address.create({ addressValue: tooShortAddressValue });
+
+    expect(createAddressWithInvalidProp).toThrow(
+      /addressValue must be 20 bytes/,
+    );
+  });
+
+  it('throws for a 41 hex-digit value', () => {
+    const tooLongAddressValue = HexNumber.create({
+      hexNumberValue: `0x${'a'.repeat(41)}`,
+    });
+    const createAddressWithInvalidProp = () =>
+      Address.create({ addressValue: tooLongAddressValue });
+
+    expect(createAddressWithInvalidProp).toThrow(
+      /addressValue must be 20 bytes/,
+    );
+  });
+
   it('returns the correct checksum-based hex string', () => {
     const checksumValue = address.toHexString();
 

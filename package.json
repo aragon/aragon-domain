@@ -1,6 +1,6 @@
 {
   "name": "@aragon/aragon-subdomain",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Aragon governance business logic package — domain model, use cases, and infrastructure adapters",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -41,8 +41,7 @@
     "ddd-core-ts": "0.1.1",
     "graphql": "16.13.2",
     "graphql-request": "7.4.0",
-    "js-sha3": "0.9.3",
-    "viem": "2.51.3",
+    "viem": "2.52.0",
     "zod": "3.23.0"
   },
   "devDependencies": {
