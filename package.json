@@ -37,26 +37,26 @@
   },
   "homepage": "https://github.com/aragon/aragon-subdomain#readme",
   "dependencies": {
-    "bignumber.js": "11.0.0",
+    "bignumber.js": "11.1.2",
     "ddd-core-ts": "0.1.1",
-    "graphql": "16.13.2",
+    "graphql": "16.14.1",
     "graphql-request": "7.4.0",
-    "viem": "2.52.0",
-    "zod": "3.23.0"
+    "viem": "2.52.2",
+    "zod": "3.25.76"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.11",
+    "@biomejs/biome": "2.4.16",
     "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "^2.30.0",
-    "@types/node": "20.8.8",
-    "@vitest/coverage-v8": "2.1.9",
+    "@types/node": "24.13.0",
+    "@vitest/coverage-v8": "3.2.6",
     "tsup": "8.5.1",
-    "typescript": "5.4.5",
-    "vitest": "2.1.9"
+    "typescript": "5.9.3",
+    "vitest": "3.2.6"
   },
   "engines": {
     "node": ">=24.13.0",
-    "pnpm": ">=10.0.0"
+    "pnpm": ">=11.0.0"
   },
-  "packageManager": "pnpm@10.33.0"
+  "packageManager": "pnpm@11.6.0+sha512.9a36518224080c6fe5165afdcfe79bfa118c29be703f3f462b1e32efe1e98e47e8750b148e08286250aad4113cc7993ca413c4e2cd447752708c2ee5751bc95f"
 }

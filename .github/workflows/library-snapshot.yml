@@ -54,10 +54,9 @@ jobs:
       - name: Publish snapshot
         if: steps.detect.outputs.changed == 'true'
         run: |
-          pnpm config set npmAuthToken ${{ steps.load-secrets.outputs.NPM_TOKEN }}
-          pnpm publish --access public --tag snapshot-${{ github.run_id }} --no-git-checks
+          env "pnpm_config_//registry.npmjs.org/:_authToken=${NPM_TOKEN}" pnpm publish --access public --tag snapshot-${{ github.run_id }} --no-git-checks
         env:
-          NODE_AUTH_TOKEN: ${{ steps.load-secrets.outputs.NPM_TOKEN }}
+          NPM_TOKEN: ${{ steps.load-secrets.outputs.NPM_TOKEN }}
       - name: Write snapshot version to summary
         if: steps.detect.outputs.changed == 'true'
         run: |

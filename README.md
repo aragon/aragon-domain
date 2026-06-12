@@ -28,9 +28,13 @@ Validation is done with [`zod`](https://zod.dev) inside domain value objects, an
 
 ## Quick start
 
-Requires Node 24+ and pnpm 10+.
+Requires Node >= 24.13 (pinned in [`.nvmrc`](./.nvmrc)) and pnpm >= 11 (pinned via `packageManager` in `package.json`). Use [nvm](https://github.com/nvm-sh/nvm) for Node and Corepack for pnpm:
 
 ```bash
+nvm install        # installs the Node version from .nvmrc
+nvm use
+corepack enable    # activates the pinned pnpm 11 version
+
 pnpm install
 pnpm run build
 pnpm run test
