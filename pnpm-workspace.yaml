@@ -13,10 +13,11 @@ preferFrozenLockfile: true
 dedupePeerDependents: true
 ignoreScripts: true
 autoInstallTypes: true
-nodeVersion: 24.13.0
+nodeVersion: 24.16.0
 engineStrict: true
 
 # pnpm overrides
 overrides:
   vite@<=6.4.1: ^6.4.2
   esbuild@<=0.24.2: ^0.25.0
+  ws@>=8.0.0 <8.21.0: '>=8.21.0'
