@@ -81,7 +81,7 @@ Snapshot releases let you test unreleased changes from a branch on npm without c
 
    Pick the bump type and write a short summary. Commit the generated file under `.changeset/` and push your branch.
 
-2. **Run the snapshot workflow.** On GitHub, go to *Actions → Library Snapshot → Run workflow* and select your branch. The workflow builds the package, runs `pnpm changeset version --snapshot`, and publishes to npm under a per-run dist-tag (`snapshot-<run-id>`).
+2. **Run the snapshot workflow.** On GitHub, go to *Actions → Publish → Run workflow* and select your branch. The workflow builds the package, runs `pnpm changeset version --snapshot`, and publishes to npm under a per-run dist-tag (`snapshot-<run-id>`). Publishing uses [npm Trusted Publishing (OIDC)](https://docs.npmjs.com/trusted-publishers/) — no npm token is involved.
 
 3. **Install the snapshot** in a consumer — the exact command also appears in the workflow run's summary:
 
