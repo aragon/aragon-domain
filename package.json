@@ -42,7 +42,7 @@
     "graphql": "16.14.1",
     "graphql-request": "7.4.0",
     "viem": "2.52.2",
-    "zod": "3.25.76"
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.16",
