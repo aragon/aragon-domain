@@ -1,5 +1,5 @@
 ---
-"@aragon/aragon-subdomain": minor
+"@aragon/aragon-domain": minor
 ---
 
 Adopt the token-voting membership DTO as the public list type and tidy the
