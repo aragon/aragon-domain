@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { AragonSubdomain, EnvioClient } from '../src';
+import { AragonDomain, EnvioClient } from '../src';
 
 const ALICE = '0x0123456789abcdef0123456789abcdef01234567';
 const PLUGIN = '0x17a1688c56087ade762721180e1cc1e831c73719';
@@ -7,12 +7,12 @@ const TOKEN = '0x0a830e9f2baa2ebaf8d33c0806283dea9c08952f';
 const DEFAULT_EVM_COIN_TYPE = '2147483648'; // 0x80000000
 
 /**
- * Builds an AragonSubdomain backed by an EnvioClient whose `query`
+ * Builds an AragonDomain backed by an EnvioClient whose `query`
  * method is replaced with a FIFO queue of canned responses. The
  * underlying GraphQLClient is constructed but never used at the
  * network layer.
  */
-function buildController(responses: unknown[]): AragonSubdomain {
+function buildController(responses: unknown[]): AragonDomain {
   const envio = new EnvioClient('https://unused.example.invalid');
   const queue = [...responses];
   vi.spyOn(envio, 'query').mockImplementation(async () => {
@@ -21,10 +21,10 @@ function buildController(responses: unknown[]): AragonSubdomain {
     }
     return queue.shift() as never;
   });
-  return AragonSubdomain.load(envio);
+  return AragonDomain.load(envio);
 }
 
-describe('AragonSubdomain', () => {
+describe('AragonDomain', () => {
   describe('getTokenVotingMembership', () => {
     it('returns a paginated DTO of ERC20 members', async () => {
       const controller = buildController([

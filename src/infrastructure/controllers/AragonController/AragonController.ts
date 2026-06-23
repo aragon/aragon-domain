@@ -41,7 +41,7 @@ export class AragonController {
   private constructor(private readonly handlers: HandlersRecord) {}
 
   /**
-   * Initializes the `AragonSubdomain`.
+   * Initializes the `AragonDomain`.
    */
   static load(envioClient: EnvioClient): AragonController {
     const memberStore = new EnvioMemberStore(envioClient);
