@@ -58,11 +58,7 @@ describe('parseFindMembersResponse', () => {
 describe('mapDTOToDomain', () => {
   it('takes the min of metrics first-activity and delegate first-VP-change when both are defined and the metrics value is smaller', () => {
     // metrics.firstActivityTimestamp (1650000000) < delegate.firstVotingPowerChangeTimestamp (1700000000)
-    const member = mapDTOToDomain(
-      buildDelegate(),
-      buildMetrics(),
-      null,
-    );
+    const member = mapDTOToDomain(buildDelegate(), buildMetrics(), null);
     expect(member.firstActivityTimestamp).toBe(1650000000);
   });
 
@@ -77,11 +73,7 @@ describe('mapDTOToDomain', () => {
 
   it('takes the max of metrics last-activity and delegate last-VP-change when both are defined and the metrics value is larger', () => {
     // metrics.lastActivityTimestamp (1750000000) > delegate.lastVotingPowerChangeTimestamp (1700000100)
-    const member = mapDTOToDomain(
-      buildDelegate(),
-      buildMetrics(),
-      null,
-    );
+    const member = mapDTOToDomain(buildDelegate(), buildMetrics(), null);
     expect(member.lastActivityTimestamp).toBe(1750000000);
   });
 
@@ -110,11 +102,7 @@ describe('mapDTOToDomain', () => {
   });
 
   it('forwards the supplied ENS name to the domain object', () => {
-    const member = mapDTOToDomain(
-      buildDelegate(),
-      undefined,
-      'alice.eth',
-    );
+    const member = mapDTOToDomain(buildDelegate(), undefined, 'alice.eth');
     expect(member.ens).toBe('alice.eth');
   });
 });

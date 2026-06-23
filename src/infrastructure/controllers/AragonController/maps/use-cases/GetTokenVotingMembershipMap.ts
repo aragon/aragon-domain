@@ -3,8 +3,8 @@ import type { Page } from '@/domain/primitives/pagination/Page';
 import { PageRequest } from '@/domain/primitives/pagination/PageRequest';
 import type { GetTokenVotingMembershipUseCaseProps } from '@/use-cases/GetTokenVotingMembershipUseCase';
 import type { PageDTO } from '../domain/PageDTO';
-import * as TokenVotingMemberMap from '../domain/TokenVotingMemberMap';
 import type { TokenVotingMemberDTO } from '../domain/TokenVotingMemberMap';
+import * as TokenVotingMemberMap from '../domain/TokenVotingMemberMap';
 
 export interface GetTokenVotingMembershipRequestDTO {
   pluginAddress: string;

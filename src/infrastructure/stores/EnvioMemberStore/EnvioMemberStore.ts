@@ -1,8 +1,8 @@
+import type { MemberStore } from '@/domain/member/MemberStore';
+import type { TokenVotingMember } from '@/domain/member/TokenVotingMember';
 import type { Page } from '@/domain/primitives/pagination/Page';
 import { createPage } from '@/domain/primitives/pagination/Page';
 import type { PageRequest } from '@/domain/primitives/pagination/PageRequest';
-import type { MemberStore } from '@/domain/member/MemberStore';
-import type { TokenVotingMember } from '@/domain/member/TokenVotingMember';
 import type { EnvioClient } from '@/infrastructure/stores/EnvioClient';
 import * as ReverseNameMap from './maps/ReverseNameMap';
 import * as TokenVotingMemberMap from './maps/TokenVotingMemberMap';

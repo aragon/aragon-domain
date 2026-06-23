@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { Address, assertHexString } from '@/domain/primitives';
 import { TokenVotingMember } from '@/domain/member/TokenVotingMember';
+import { Address, assertHexString } from '@/domain/primitives';
 import { VotingPower } from '@/domain/voting-power/VotingPower';
 
 /**

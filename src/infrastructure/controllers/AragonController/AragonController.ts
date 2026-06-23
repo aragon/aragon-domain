@@ -6,18 +6,18 @@ import type { Page } from '@/domain/primitives/pagination/Page';
 import type { EnvioClient } from '@/infrastructure/stores/EnvioClient';
 import { EnvioMemberProfileStore } from '@/infrastructure/stores/EnvioMemberProfileStore/EnvioMemberProfileStore';
 import { EnvioMemberStore } from '@/infrastructure/stores/EnvioMemberStore/EnvioMemberStore';
-import { GetTokenVotingMembershipUseCase } from '@/use-cases/GetTokenVotingMembershipUseCase';
-import type { GetTokenVotingMembershipUseCaseProps } from '@/use-cases/GetTokenVotingMembershipUseCase';
 import type { GetMemberProfileTextRecordsUseCaseProps } from '@/use-cases/GetMemberProfileTextRecordsUseCase';
 import { GetMemberProfileTextRecordsUseCase } from '@/use-cases/GetMemberProfileTextRecordsUseCase';
+import type { GetTokenVotingMembershipUseCaseProps } from '@/use-cases/GetTokenVotingMembershipUseCase';
+import { GetTokenVotingMembershipUseCase } from '@/use-cases/GetTokenVotingMembershipUseCase';
 import type { MemberProfileTextRecordDTO } from './maps/domain/MemberProfileTextRecordMap';
 import * as MemberProfileTextRecordMap from './maps/domain/MemberProfileTextRecordMap';
 import type { PageDTO } from './maps/domain/PageDTO';
 import type { TokenVotingMemberDTO } from './maps/domain/TokenVotingMemberMap';
-import * as GetTokenVotingMembershipMap from './maps/use-cases/GetTokenVotingMembershipMap';
-import type { GetTokenVotingMembershipRequestDTO } from './maps/use-cases/GetTokenVotingMembershipMap';
 import type { GetMemberProfileTextRecordsRequestDTO } from './maps/use-cases/GetMemberProfileTextRecordsMap';
 import * as GetMemberProfileTextRecordsMap from './maps/use-cases/GetMemberProfileTextRecordsMap';
+import type { GetTokenVotingMembershipRequestDTO } from './maps/use-cases/GetTokenVotingMembershipMap';
+import * as GetTokenVotingMembershipMap from './maps/use-cases/GetTokenVotingMembershipMap';
 
 interface HandlersRecord {
   getTokenVotingMembership: HandlerDefinition<

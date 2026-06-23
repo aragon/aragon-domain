@@ -19,7 +19,9 @@ export interface TokenVotingMemberDTO {
   };
 }
 
-export function mapDomainToDTO(member: TokenVotingMember): TokenVotingMemberDTO {
+export function mapDomainToDTO(
+  member: TokenVotingMember,
+): TokenVotingMemberDTO {
   const first = member.firstActivityTimestamp;
   const last = member.lastActivityTimestamp;
   return {
