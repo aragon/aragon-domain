@@ -25,7 +25,7 @@ function buildController(responses: unknown[]): AragonSubdomain {
 }
 
 describe('AragonSubdomain', () => {
-  describe('getMembership', () => {
+  describe('getTokenVotingMembership', () => {
     it('returns a paginated DTO of ERC20 members', async () => {
       const controller = buildController([
         {
@@ -55,14 +55,14 @@ describe('AragonSubdomain', () => {
         },
       ]);
 
-      const response = await controller.getMembership({
+      const response = await controller.getTokenVotingMembership({
         pluginAddress: PLUGIN,
         tokenContractAddress: TOKEN,
         page: 1,
         pageSize: 15,
       });
 
-      assert(response.success, 'expected getMembership to succeed');
+      assert(response.success, 'expected getTokenVotingMembership to succeed');
       expect(response.result.metadata).toEqual({
         page: 1,
         pageSize: 15,

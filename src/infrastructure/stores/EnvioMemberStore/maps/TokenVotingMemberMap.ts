@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Address, assertHexString } from '@/domain/primitives';
-import { TokenVotingMember } from '@/domain/token-voting-member/TokenVotingMember';
+import { TokenVotingMember } from '@/domain/member/TokenVotingMember';
 import { VotingPower } from '@/domain/voting-power/VotingPower';
 
 /**
@@ -99,19 +99,10 @@ export function mapDTOToDomain(
   delegate: ERC20VotesDelegateDTO,
   metrics: MemberMetricsDTO | undefined,
   ens: string | null,
-  pluginAddress: string,
 ): TokenVotingMember {
   assertHexString(
     delegate.delegateAddress,
     'delegateAddress must be a 0x-prefixed hex string',
-  );
-  assertHexString(
-    delegate.tokenContractAddress,
-    'tokenContractAddress must be a 0x-prefixed hex string',
-  );
-  assertHexString(
-    pluginAddress,
-    'pluginAddress must be a 0x-prefixed hex string',
   );
 
   // Activity is the merge of two signals:
@@ -131,8 +122,6 @@ export function mapDTOToDomain(
 
   return TokenVotingMember.create({
     address: Address.fromHexString(delegate.delegateAddress),
-    pluginAddress: Address.fromHexString(pluginAddress),
-    tokenContractAddress: Address.fromHexString(delegate.tokenContractAddress),
     votingPower: VotingPower.fromBigInt(BigInt(delegate.votingPower)),
     ens,
     firstActivityTimestamp,

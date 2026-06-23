@@ -1,17 +1,17 @@
-import { Member } from '@/domain/member/Member';
+import { TokenVotingMember } from '@/domain/member/TokenVotingMember';
 import { Address } from '@/domain/primitives';
 import { VotingPower } from '@/domain/voting-power/VotingPower';
-import { mapDomainToDTO } from './MemberMap';
+import { mapDomainToDTO } from './TokenVotingMemberMap';
 
-describe('MemberMap.mapDomainToDTO', () => {
+describe('TokenVotingMemberMap.mapDomainToDTO', () => {
   const address = Address.fromHexString(
     '0x0123456789abcdef0123456789abcdef01234567',
   );
 
   const buildMember = (
-    overrides: Partial<Parameters<typeof Member.create>[0]> = {},
+    overrides: Partial<Parameters<typeof TokenVotingMember.create>[0]> = {},
   ) =>
-    Member.create({
+    TokenVotingMember.create({
       address,
       ens: 'alice.eth',
       votingPower: VotingPower.fromBigInt(5000000000000000000n),

@@ -1,30 +1,30 @@
 import type { HandlerDefinition } from 'ddd-core-ts';
 import { handleRequest } from 'ddd-core-ts';
-import type { Member } from '@/domain/member/Member';
+import type { TokenVotingMember } from '@/domain/member/TokenVotingMember';
 import type { MemberProfileTextRecord } from '@/domain/member-profile/MemberProfileTextRecord';
 import type { Page } from '@/domain/primitives/pagination/Page';
 import type { EnvioClient } from '@/infrastructure/stores/EnvioClient';
 import { EnvioMemberProfileStore } from '@/infrastructure/stores/EnvioMemberProfileStore/EnvioMemberProfileStore';
-import { EnvioTokenVotingMemberStore } from '@/infrastructure/stores/EnvioTokenVotingMemberStore/EnvioTokenVotingMemberStore';
-import type { GetERC20MembershipUseCaseProps } from '@/use-cases/GetERC20MembershipUseCase';
-import { GetERC20MembershipUseCase } from '@/use-cases/GetERC20MembershipUseCase';
+import { EnvioMemberStore } from '@/infrastructure/stores/EnvioMemberStore/EnvioMemberStore';
+import { GetTokenVotingMembershipUseCase } from '@/use-cases/GetTokenVotingMembershipUseCase';
+import type { GetTokenVotingMembershipUseCaseProps } from '@/use-cases/GetTokenVotingMembershipUseCase';
 import type { GetMemberProfileTextRecordsUseCaseProps } from '@/use-cases/GetMemberProfileTextRecordsUseCase';
 import { GetMemberProfileTextRecordsUseCase } from '@/use-cases/GetMemberProfileTextRecordsUseCase';
 import type { MemberProfileTextRecordDTO } from './maps/domain/MemberProfileTextRecordMap';
 import * as MemberProfileTextRecordMap from './maps/domain/MemberProfileTextRecordMap';
-import type { PaginatedMemberDTO } from './maps/domain/PaginatedMemberMap';
-import * as PaginatedMemberMap from './maps/domain/PaginatedMemberMap';
-import type { GetERC20MembershipRequestDTO } from './maps/use-cases/GetERC20MembershipMap';
-import * as GetERC20MembershipMap from './maps/use-cases/GetERC20MembershipMap';
+import type { PageDTO } from './maps/domain/PageDTO';
+import type { TokenVotingMemberDTO } from './maps/domain/TokenVotingMemberMap';
+import * as GetTokenVotingMembershipMap from './maps/use-cases/GetTokenVotingMembershipMap';
+import type { GetTokenVotingMembershipRequestDTO } from './maps/use-cases/GetTokenVotingMembershipMap';
 import type { GetMemberProfileTextRecordsRequestDTO } from './maps/use-cases/GetMemberProfileTextRecordsMap';
 import * as GetMemberProfileTextRecordsMap from './maps/use-cases/GetMemberProfileTextRecordsMap';
 
 interface HandlersRecord {
-  getERC20Membership: HandlerDefinition<
-    GetERC20MembershipRequestDTO,
-    GetERC20MembershipUseCaseProps,
-    Page<Member>,
-    PaginatedMemberDTO
+  getTokenVotingMembership: HandlerDefinition<
+    GetTokenVotingMembershipRequestDTO,
+    GetTokenVotingMembershipUseCaseProps,
+    Page<TokenVotingMember>,
+    PageDTO<TokenVotingMemberDTO>
   >;
   getMemberProfileTextRecords: HandlerDefinition<
     GetMemberProfileTextRecordsRequestDTO,
@@ -44,8 +44,8 @@ export class AragonController {
    * Initializes the `AragonSubdomain`.
    */
   static load(envioClient: EnvioClient): AragonController {
-    const memberStore = new EnvioTokenVotingMemberStore(envioClient);
-    const getERC20MembershipUseCase = new GetERC20MembershipUseCase(
+    const memberStore = new EnvioMemberStore(envioClient);
+    const getTokenVotingMembershipUseCase = new GetTokenVotingMembershipUseCase(
       memberStore,
     );
 
@@ -54,10 +54,10 @@ export class AragonController {
       new GetMemberProfileTextRecordsUseCase(memberProfileStore);
 
     const handlers: HandlersRecord = {
-      getERC20Membership: {
-        requestMapper: GetERC20MembershipMap,
-        responseMapper: PaginatedMemberMap,
-        useCaseExecutor: getERC20MembershipUseCase,
+      getTokenVotingMembership: {
+        requestMapper: GetTokenVotingMembershipMap,
+        responseMapper: GetTokenVotingMembershipMap,
+        useCaseExecutor: getTokenVotingMembershipUseCase,
       },
       getMemberProfileTextRecords: {
         requestMapper: GetMemberProfileTextRecordsMap,
@@ -74,8 +74,8 @@ export class AragonController {
    * to a specific ERC20Votes token contract and ordered by current
    * voting power descending.
    */
-  public getMembership(dto: GetERC20MembershipRequestDTO) {
-    return handleRequest(this.handlers.getERC20Membership, dto);
+  public getTokenVotingMembership(dto: GetTokenVotingMembershipRequestDTO) {
+    return handleRequest(this.handlers.getTokenVotingMembership, dto);
   }
 
   /**

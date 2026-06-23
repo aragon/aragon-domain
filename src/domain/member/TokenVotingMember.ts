@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { Address } from '@/domain/primitives';
 import { VotingPower } from '@/domain/voting-power/VotingPower';
 
-const MemberPropsSchema = z.object({
+const TokenVotingMemberPropsSchema = z.object({
   address: z.instanceof(Address),
   ens: z.string().nullable(),
   votingPower: z.instanceof(VotingPower),
@@ -12,9 +12,14 @@ const MemberPropsSchema = z.object({
   delegationCount: z.number().int().nonnegative(),
 });
 
-type MemberProps = z.infer<typeof MemberPropsSchema>;
+type TokenVotingMemberProps = z.infer<typeof TokenVotingMemberPropsSchema>;
 
-export class Member extends ValueObject<MemberProps> {
+/**
+ * A member of a TokenVoting plugin: aggregated voting power on the
+ * governance token plus per-plugin activity timestamps (unix seconds),
+ * sourced from the indexer.
+ */
+export class TokenVotingMember extends ValueObject<TokenVotingMemberProps> {
   /**
    * The member's wallet address.
    */
@@ -58,8 +63,8 @@ export class Member extends ValueObject<MemberProps> {
     return this.props.delegationCount;
   }
 
-  static create(props: MemberProps): Member {
-    const validated = MemberPropsSchema.parse(props);
-    return new Member(validated);
+  static create(props: TokenVotingMemberProps): TokenVotingMember {
+    const validated = TokenVotingMemberPropsSchema.parse(props);
+    return new TokenVotingMember(validated);
   }
 }

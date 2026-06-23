@@ -1,8 +1,8 @@
 import { Address } from '@/domain/primitives';
 import { VotingPower } from '@/domain/voting-power/VotingPower';
-import { Member } from './Member';
+import { TokenVotingMember } from './TokenVotingMember';
 
-describe('Member', () => {
+describe('TokenVotingMember', () => {
   const address = Address.fromHexString(
     '0x0123456789abcdef0123456789abcdef01234567',
   );
@@ -19,7 +19,7 @@ describe('Member', () => {
   };
 
   it('creates a valid member', () => {
-    const member = Member.create(validProps);
+    const member = TokenVotingMember.create(validProps);
     expect(member.address.equals(address)).toBe(true);
     expect(member.ens).toBe('alice.eth');
     expect(member.votingPower.isZero).toBe(false);
@@ -28,19 +28,19 @@ describe('Member', () => {
   });
 
   it('allows null ens', () => {
-    const member = Member.create({ ...validProps, ens: null });
+    const member = TokenVotingMember.create({ ...validProps, ens: null });
     expect(member.ens).toBeNull();
   });
 
   it('structural equality', () => {
-    const a = Member.create(validProps);
-    const b = Member.create(validProps);
+    const a = TokenVotingMember.create(validProps);
+    const b = TokenVotingMember.create(validProps);
     expect(a.equals(b)).toBe(true);
   });
 
   it('structural inequality when votingPower differs', () => {
-    const a = Member.create(validProps);
-    const b = Member.create({
+    const a = TokenVotingMember.create(validProps);
+    const b = TokenVotingMember.create({
       ...validProps,
       votingPower: VotingPower.zero(),
     });

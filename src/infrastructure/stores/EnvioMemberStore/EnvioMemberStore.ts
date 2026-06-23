@@ -1,8 +1,8 @@
 import type { Page } from '@/domain/primitives/pagination/Page';
 import { createPage } from '@/domain/primitives/pagination/Page';
 import type { PageRequest } from '@/domain/primitives/pagination/PageRequest';
-import type { TokenVotingMember } from '@/domain/token-voting-member/TokenVotingMember';
-import type { TokenVotingMemberStore } from '@/domain/token-voting-member/TokenVotingMemberStore';
+import type { MemberStore } from '@/domain/member/MemberStore';
+import type { TokenVotingMember } from '@/domain/member/TokenVotingMember';
 import type { EnvioClient } from '@/infrastructure/stores/EnvioClient';
 import * as ReverseNameMap from './maps/ReverseNameMap';
 import * as TokenVotingMemberMap from './maps/TokenVotingMemberMap';
@@ -92,10 +92,10 @@ const FIND_REVERSE_NAMES_QUERY = `
   }
 `;
 
-export class EnvioTokenVotingMemberStore implements TokenVotingMemberStore {
+export class EnvioMemberStore implements MemberStore {
   constructor(private readonly envio: EnvioClient) {}
 
-  public async findMembersByPluginAndToken(
+  public async findTokenVotingMembers(
     pluginAddress: string,
     tokenContractAddress: string,
     request: PageRequest,
@@ -127,7 +127,6 @@ export class EnvioTokenVotingMemberStore implements TokenVotingMemberStore {
           delegate,
           metricsByMember.get(addressLower),
           ensByAddress.get(addressLower) ?? null,
-          pluginAddressLower,
         );
       });
 

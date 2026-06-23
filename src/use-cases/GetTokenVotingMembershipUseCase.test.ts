@@ -1,29 +1,22 @@
+import type { MemberStore } from '@/domain/member/MemberStore';
+import { TokenVotingMember } from '@/domain/member/TokenVotingMember';
 import { Address } from '@/domain/primitives';
 import { createPage } from '@/domain/primitives/pagination/Page';
 import { PageRequest } from '@/domain/primitives/pagination/PageRequest';
-import { TokenVotingMember } from '@/domain/token-voting-member/TokenVotingMember';
-import type { TokenVotingMemberStore } from '@/domain/token-voting-member/TokenVotingMemberStore';
 import { VotingPower } from '@/domain/voting-power/VotingPower';
-import { GetERC20MembershipUseCase } from './GetERC20MembershipUseCase';
+import { GetTokenVotingMembershipUseCase } from './GetTokenVotingMembershipUseCase';
 
-describe('GetERC20MembershipUseCase', () => {
+describe('GetTokenVotingMembershipUseCase', () => {
   const memberAddressValue = '0x1234567890abcdef1234567890abcdef12345678';
   const memberAddress = Address.fromHexString(memberAddressValue);
-  const pluginAddressValue = '0x1111111111111111111111111111111111111111';
-  const pluginAddressObj = Address.fromHexString(pluginAddressValue);
-  const tokenContractAddressValue =
-    '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
-  const tokenContractAddressObj = Address.fromHexString(
-    tokenContractAddressValue,
-  );
+  const pluginAddress = '0x1111111111111111111111111111111111111111';
+  const tokenContractAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
   const firstActivityTimestamp = 1705320000;
   const lastActivityTimestamp = 1718872200;
 
   const buildMember = (ens: string | null = null): TokenVotingMember =>
     TokenVotingMember.create({
       address: memberAddress,
-      pluginAddress: pluginAddressObj,
-      tokenContractAddress: tokenContractAddressObj,
       votingPower: VotingPower.fromBigInt(5000000000000000000n),
       ens,
       firstActivityTimestamp,
@@ -33,18 +26,16 @@ describe('GetERC20MembershipUseCase', () => {
 
   const buildMockStore = (
     member: TokenVotingMember = buildMember(),
-  ): TokenVotingMemberStore => ({
-    findMembersByPluginAndToken: vi
+  ): MemberStore => ({
+    findTokenVotingMembers: vi
       .fn()
       .mockResolvedValue(createPage([member], 1, 20, 1)),
   });
 
   const page = PageRequest.create({ page: 1, pageSize: 20 });
-  const pluginAddress = pluginAddressValue;
-  const tokenContractAddress = tokenContractAddressValue;
 
   it('returns a page of members', async () => {
-    const useCase = new GetERC20MembershipUseCase(buildMockStore());
+    const useCase = new GetTokenVotingMembershipUseCase(buildMockStore());
     const result = await useCase.execute({
       pluginAddress,
       tokenContractAddress,
@@ -62,10 +53,10 @@ describe('GetERC20MembershipUseCase', () => {
 
   it('passes plugin address, token address, and page to store', async () => {
     const store = buildMockStore();
-    const useCase = new GetERC20MembershipUseCase(store);
+    const useCase = new GetTokenVotingMembershipUseCase(store);
     await useCase.execute({ pluginAddress, tokenContractAddress, page });
 
-    expect(store.findMembersByPluginAndToken).toHaveBeenCalledWith(
+    expect(store.findTokenVotingMembers).toHaveBeenCalledWith(
       pluginAddress,
       tokenContractAddress,
       page,
@@ -73,7 +64,7 @@ describe('GetERC20MembershipUseCase', () => {
   });
 
   it('forwards the ENS name attached to each TokenVotingMember', async () => {
-    const useCase = new GetERC20MembershipUseCase(
+    const useCase = new GetTokenVotingMembershipUseCase(
       buildMockStore(buildMember('alice.eth')),
     );
     const result = await useCase.execute({
@@ -86,15 +77,13 @@ describe('GetERC20MembershipUseCase', () => {
   });
 
   it('wraps store errors', async () => {
-    const failingStore: TokenVotingMemberStore = {
-      findMembersByPluginAndToken: vi
-        .fn()
-        .mockRejectedValue(new Error('db down')),
+    const failingStore: MemberStore = {
+      findTokenVotingMembers: vi.fn().mockRejectedValue(new Error('db down')),
     };
-    const useCase = new GetERC20MembershipUseCase(failingStore);
+    const useCase = new GetTokenVotingMembershipUseCase(failingStore);
 
     await expect(
       useCase.execute({ pluginAddress, tokenContractAddress, page }),
-    ).rejects.toThrow('Error while getting ERC20 membership');
+    ).rejects.toThrow('Error while getting token-voting membership');
   });
 });

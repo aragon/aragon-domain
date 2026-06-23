@@ -1,12 +1,14 @@
-import type { Member } from '@/domain/member/Member';
+import type { TokenVotingMember } from '@/domain/member/TokenVotingMember';
 
 /**
- * DTO matching the frontend's ITokenMember interface.
+ * Token-voting membership DTO — the type the frontend's token member list
+ * renders from, regardless of whether the data came from the subdomain or
+ * the legacy backend.
  *
  * Activity fields are unix-seconds timestamps. The frontend can render
  * them directly without resolving block numbers via RPC.
  */
-export interface MemberDTO {
+export interface TokenVotingMemberDTO {
   address: string;
   ens: string | null;
   votingPower: string | null;
@@ -17,7 +19,7 @@ export interface MemberDTO {
   };
 }
 
-export function mapDomainToDTO(member: Member): MemberDTO {
+export function mapDomainToDTO(member: TokenVotingMember): TokenVotingMemberDTO {
   const first = member.firstActivityTimestamp;
   const last = member.lastActivityTimestamp;
   return {

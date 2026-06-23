@@ -1,6 +1,6 @@
 import { PageRequest } from '@/domain/primitives/pagination/PageRequest';
 import type { EnvioClient } from '@/infrastructure/stores/EnvioClient';
-import { EnvioTokenVotingMemberStore } from './EnvioTokenVotingMemberStore';
+import { EnvioMemberStore } from './EnvioMemberStore';
 
 const PLUGIN = '0x1111111111111111111111111111111111111111';
 const TOKEN = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
@@ -54,7 +54,7 @@ const buildDelegate = (
   lastVotingPowerChangeTimestamp: '1700000100',
 });
 
-describe('EnvioTokenVotingMemberStore', () => {
+describe('EnvioMemberStore', () => {
   const page = PageRequest.create({ page: 1, pageSize: 20 });
 
   it('attaches ENS names from the indexer ReverseName entity to each member', async () => {
@@ -74,9 +74,9 @@ describe('EnvioTokenVotingMemberStore', () => {
         ],
       },
     ]);
-    const store = new EnvioTokenVotingMemberStore(envio);
+    const store = new EnvioMemberStore(envio);
 
-    const result = await store.findMembersByPluginAndToken(PLUGIN, TOKEN, page);
+    const result = await store.findTokenVotingMembers(PLUGIN, TOKEN, page);
 
     expect(result.items.map((m) => m.ens)).toEqual(['alice.eth', null]);
 
@@ -105,9 +105,9 @@ describe('EnvioTokenVotingMemberStore', () => {
         ],
       },
     ]);
-    const store = new EnvioTokenVotingMemberStore(envio);
+    const store = new EnvioMemberStore(envio);
 
-    const result = await store.findMembersByPluginAndToken(PLUGIN, TOKEN, page);
+    const result = await store.findTokenVotingMembers(PLUGIN, TOKEN, page);
 
     expect(result.items[0].ens).toBe('alice-default.eth');
   });
@@ -125,9 +125,9 @@ describe('EnvioTokenVotingMemberStore', () => {
         ],
       },
     ]);
-    const store = new EnvioTokenVotingMemberStore(envio);
+    const store = new EnvioMemberStore(envio);
 
-    const result = await store.findMembersByPluginAndToken(PLUGIN, TOKEN, page);
+    const result = await store.findTokenVotingMembers(PLUGIN, TOKEN, page);
 
     expect(result.items[0].ens).toBe('alice-legacy.eth');
   });
@@ -140,9 +140,9 @@ describe('EnvioTokenVotingMemberStore', () => {
         MemberMetrics: [],
       },
     ]);
-    const store = new EnvioTokenVotingMemberStore(envio);
+    const store = new EnvioMemberStore(envio);
 
-    const result = await store.findMembersByPluginAndToken(PLUGIN, TOKEN, page);
+    const result = await store.findTokenVotingMembers(PLUGIN, TOKEN, page);
 
     expect(result.items).toHaveLength(0);
     expect(calls).toHaveLength(1);
@@ -158,9 +158,9 @@ describe('EnvioTokenVotingMemberStore', () => {
       },
       { ReverseName: [] },
     ]);
-    const store = new EnvioTokenVotingMemberStore(envio);
+    const store = new EnvioMemberStore(envio);
 
-    await store.findMembersByPluginAndToken(PLUGIN, TOKEN, page);
+    await store.findTokenVotingMembers(PLUGIN, TOKEN, page);
 
     expect(calls[1].variables).toEqual({ addresses: [ALICE] });
   });
@@ -169,10 +169,10 @@ describe('EnvioTokenVotingMemberStore', () => {
     const envio = {
       query: vi.fn().mockRejectedValue(new Error('graphql exploded')),
     } as unknown as EnvioClient;
-    const store = new EnvioTokenVotingMemberStore(envio);
+    const store = new EnvioMemberStore(envio);
 
     await expect(
-      store.findMembersByPluginAndToken(PLUGIN, TOKEN, page),
+      store.findTokenVotingMembers(PLUGIN, TOKEN, page),
     ).rejects.toThrow('Error querying members from Envio');
   });
 });

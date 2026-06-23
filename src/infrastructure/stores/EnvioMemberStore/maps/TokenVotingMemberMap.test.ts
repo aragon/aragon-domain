@@ -62,7 +62,6 @@ describe('mapDTOToDomain', () => {
       buildDelegate(),
       buildMetrics(),
       null,
-      PLUGIN,
     );
     expect(member.firstActivityTimestamp).toBe(1650000000);
   });
@@ -72,7 +71,6 @@ describe('mapDTOToDomain', () => {
       buildDelegate({ firstVotingPowerChangeTimestamp: '1600000000' }),
       buildMetrics({ firstActivityTimestamp: '1650000000' }),
       null,
-      PLUGIN,
     );
     expect(member.firstActivityTimestamp).toBe(1600000000);
   });
@@ -83,7 +81,6 @@ describe('mapDTOToDomain', () => {
       buildDelegate(),
       buildMetrics(),
       null,
-      PLUGIN,
     );
     expect(member.lastActivityTimestamp).toBe(1750000000);
   });
@@ -93,7 +90,6 @@ describe('mapDTOToDomain', () => {
       buildDelegate({ lastVotingPowerChangeTimestamp: '1800000000' }),
       buildMetrics({ lastActivityTimestamp: '1750000000' }),
       null,
-      PLUGIN,
     );
     expect(member.lastActivityTimestamp).toBe(1800000000);
   });
@@ -108,7 +104,6 @@ describe('mapDTOToDomain', () => {
       }),
       undefined,
       null,
-      PLUGIN,
     );
     expect(member.firstActivityTimestamp).toBe(0);
     expect(member.lastActivityTimestamp).toBe(0);
@@ -119,7 +114,6 @@ describe('mapDTOToDomain', () => {
       buildDelegate(),
       undefined,
       'alice.eth',
-      PLUGIN,
     );
     expect(member.ens).toBe('alice.eth');
   });
