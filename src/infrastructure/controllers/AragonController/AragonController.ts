@@ -3,9 +3,11 @@ import { handleRequest } from 'ddd-core-ts';
 import type { TokenVotingMember } from '@/domain/member/TokenVotingMember';
 import type { MemberProfileTextRecord } from '@/domain/member-profile/MemberProfileTextRecord';
 import type { Page } from '@/domain/primitives/pagination/Page';
+import type { RpcUrls } from '@/infrastructure/config/RpcUrls';
 import type { EnvioClient } from '@/infrastructure/stores/EnvioClient';
 import { EnvioMemberProfileStore } from '@/infrastructure/stores/EnvioMemberProfileStore/EnvioMemberProfileStore';
 import { EnvioMemberStore } from '@/infrastructure/stores/EnvioMemberStore/EnvioMemberStore';
+import { ViemENSStore } from '@/infrastructure/stores/ViemENSStore/ViemENSStore';
 import type { GetMemberProfileTextRecordsUseCaseProps } from '@/use-cases/GetMemberProfileTextRecordsUseCase';
 import { GetMemberProfileTextRecordsUseCase } from '@/use-cases/GetMemberProfileTextRecordsUseCase';
 import type { GetTokenVotingMembershipUseCaseProps } from '@/use-cases/GetTokenVotingMembershipUseCase';
@@ -42,11 +44,16 @@ export class AragonController {
 
   /**
    * Initializes the `AragonDomain`.
+   *
+   * @param envioClient Indexer client backing the on-chain member data.
+   * @param rpcUrls RPC endpoint URLs keyed by chain id.
    */
-  static load(envioClient: EnvioClient): AragonController {
+  static load(envioClient: EnvioClient, rpcUrls: RpcUrls): AragonController {
     const memberStore = new EnvioMemberStore(envioClient);
+    const ensStore = ViemENSStore.fromRpcUrls(rpcUrls);
     const getTokenVotingMembershipUseCase = new GetTokenVotingMembershipUseCase(
       memberStore,
+      ensStore,
     );
 
     const memberProfileStore = new EnvioMemberProfileStore(envioClient);

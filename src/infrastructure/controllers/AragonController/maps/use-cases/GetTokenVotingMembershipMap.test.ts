@@ -1,3 +1,4 @@
+import { ENSName } from '@/domain/ens/ENSName';
 import { TokenVotingMember } from '@/domain/member/TokenVotingMember';
 import { Address } from '@/domain/primitives';
 import { createPage } from '@/domain/primitives/pagination/Page';
@@ -28,11 +29,17 @@ describe('GetTokenVotingMembershipMap', () => {
       expect(result.page.pageSize).toBe(20);
     });
 
-    it('forwards plugin and token addresses unchanged', () => {
+    it('converts plugin and token addresses to Address value objects', () => {
       const result = mapDTOToDomain({ pluginAddress, tokenContractAddress });
 
-      expect(result.pluginAddress).toBe(pluginAddress);
-      expect(result.tokenContractAddress).toBe(tokenContractAddress);
+      expect(
+        result.pluginAddress.equals(Address.fromHexString(pluginAddress)),
+      ).toBe(true);
+      expect(
+        result.tokenContractAddress.equals(
+          Address.fromHexString(tokenContractAddress),
+        ),
+      ).toBe(true);
     });
   });
 
@@ -42,7 +49,7 @@ describe('GetTokenVotingMembershipMap', () => {
         address: Address.fromHexString(
           '0x0123456789abcdef0123456789abcdef01234567',
         ),
-        ens: 'alice.eth',
+        ens: ENSName.fromString('alice.eth'),
         votingPower: VotingPower.fromBigInt(5000000000000000000n),
         firstActivityTimestamp: 1705320000,
         lastActivityTimestamp: 1718872200,

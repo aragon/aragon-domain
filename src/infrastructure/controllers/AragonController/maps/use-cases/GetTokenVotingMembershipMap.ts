@@ -1,4 +1,5 @@
 import type { TokenVotingMember } from '@/domain/member/TokenVotingMember';
+import { Address, assertHexString } from '@/domain/primitives';
 import type { Page } from '@/domain/primitives/pagination/Page';
 import { PageRequest } from '@/domain/primitives/pagination/PageRequest';
 import type { GetTokenVotingMembershipUseCaseProps } from '@/use-cases/GetTokenVotingMembershipUseCase';
@@ -16,9 +17,17 @@ export interface GetTokenVotingMembershipRequestDTO {
 export function mapDTOToDomain(
   dto: GetTokenVotingMembershipRequestDTO,
 ): GetTokenVotingMembershipUseCaseProps {
+  assertHexString(
+    dto.pluginAddress,
+    'Expected plugin address to be a hex string',
+  );
+  assertHexString(
+    dto.tokenContractAddress,
+    'Expected token contract address to be a hex string',
+  );
   return {
-    pluginAddress: dto.pluginAddress,
-    tokenContractAddress: dto.tokenContractAddress,
+    pluginAddress: Address.fromHexString(dto.pluginAddress),
+    tokenContractAddress: Address.fromHexString(dto.tokenContractAddress),
     page: PageRequest.create({
       page: dto.page ?? 1,
       pageSize: dto.pageSize ?? 20,

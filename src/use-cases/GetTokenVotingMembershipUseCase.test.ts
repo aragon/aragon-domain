@@ -1,5 +1,7 @@
+import { ENSName } from '@/domain/ens/ENSName';
+import type { ENSStore } from '@/domain/ens/ENSStore';
 import type { MemberStore } from '@/domain/member/MemberStore';
-import { TokenVotingMember } from '@/domain/member/TokenVotingMember';
+import { TokenVotingMemberRecord } from '@/domain/member/TokenVotingMemberRecord';
 import { Address } from '@/domain/primitives';
 import { createPage } from '@/domain/primitives/pagination/Page';
 import { PageRequest } from '@/domain/primitives/pagination/PageRequest';
@@ -9,33 +11,45 @@ import { GetTokenVotingMembershipUseCase } from './GetTokenVotingMembershipUseCa
 describe('GetTokenVotingMembershipUseCase', () => {
   const memberAddressValue = '0x1234567890abcdef1234567890abcdef12345678';
   const memberAddress = Address.fromHexString(memberAddressValue);
-  const pluginAddress = '0x1111111111111111111111111111111111111111';
-  const tokenContractAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
+  const pluginAddress = Address.fromHexString(
+    '0x1111111111111111111111111111111111111111',
+  );
+  const tokenContractAddress = Address.fromHexString(
+    '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+  );
   const firstActivityTimestamp = 1705320000;
   const lastActivityTimestamp = 1718872200;
 
-  const buildMember = (ens: string | null = null): TokenVotingMember =>
-    TokenVotingMember.create({
+  const buildRecord = (): TokenVotingMemberRecord =>
+    TokenVotingMemberRecord.create({
       address: memberAddress,
       votingPower: VotingPower.fromBigInt(5000000000000000000n),
-      ens,
       firstActivityTimestamp,
       lastActivityTimestamp,
       delegationCount: 4,
     });
 
-  const buildMockStore = (
-    member: TokenVotingMember = buildMember(),
+  const buildMemberStore = (
+    record: TokenVotingMemberRecord = buildRecord(),
   ): MemberStore => ({
     findTokenVotingMembers: vi
       .fn()
-      .mockResolvedValue(createPage([member], 1, 20, 1)),
+      .mockResolvedValue(createPage([record], 1, 20, 1)),
+  });
+
+  const buildEnsStore = (
+    names: Map<string, ENSName> = new Map(),
+  ): ENSStore => ({
+    lookUpPrimaryNames: vi.fn().mockResolvedValue(names),
   });
 
   const page = PageRequest.create({ page: 1, pageSize: 20 });
 
   it('returns a page of members', async () => {
-    const useCase = new GetTokenVotingMembershipUseCase(buildMockStore());
+    const useCase = new GetTokenVotingMembershipUseCase(
+      buildMemberStore(),
+      buildEnsStore(),
+    );
     const result = await useCase.execute({
       pluginAddress,
       tokenContractAddress,
@@ -51,36 +65,79 @@ describe('GetTokenVotingMembershipUseCase', () => {
     expect(result.totalRecords).toBe(1);
   });
 
-  it('passes plugin address, token address, and page to store', async () => {
-    const store = buildMockStore();
-    const useCase = new GetTokenVotingMembershipUseCase(store);
+  it('passes plugin address, token address, and page to the member store', async () => {
+    const memberStore = buildMemberStore();
+    const useCase = new GetTokenVotingMembershipUseCase(
+      memberStore,
+      buildEnsStore(),
+    );
     await useCase.execute({ pluginAddress, tokenContractAddress, page });
 
-    expect(store.findTokenVotingMembers).toHaveBeenCalledWith(
+    expect(memberStore.findTokenVotingMembers).toHaveBeenCalledWith(
       pluginAddress,
       tokenContractAddress,
       page,
     );
   });
 
-  it('forwards the ENS name attached to each TokenVotingMember', async () => {
+  it('enriches each member with the ENS name resolved for its address', async () => {
+    const names = new Map([
+      [memberAddress.toHexString(), ENSName.fromString('alice.eth')],
+    ]);
+    const ensStore = buildEnsStore(names);
     const useCase = new GetTokenVotingMembershipUseCase(
-      buildMockStore(buildMember('alice.eth')),
+      buildMemberStore(),
+      ensStore,
     );
+
     const result = await useCase.execute({
       pluginAddress,
       tokenContractAddress,
       page,
     });
 
-    expect(result.items[0].ens).toBe('alice.eth');
+    expect(result.items[0].ens?.toString()).toBe('alice.eth');
+    // ENS lookups are scoped to the page's addresses.
+    expect(ensStore.lookUpPrimaryNames).toHaveBeenCalledWith([memberAddress]);
   });
 
-  it('wraps store errors', async () => {
+  it('leaves ens null when the address has no resolved name', async () => {
+    const useCase = new GetTokenVotingMembershipUseCase(
+      buildMemberStore(),
+      buildEnsStore(new Map()),
+    );
+
+    const result = await useCase.execute({
+      pluginAddress,
+      tokenContractAddress,
+      page,
+    });
+
+    expect(result.items[0].ens).toBeNull();
+  });
+
+  it('wraps member-store errors', async () => {
     const failingStore: MemberStore = {
       findTokenVotingMembers: vi.fn().mockRejectedValue(new Error('db down')),
     };
-    const useCase = new GetTokenVotingMembershipUseCase(failingStore);
+    const useCase = new GetTokenVotingMembershipUseCase(
+      failingStore,
+      buildEnsStore(),
+    );
+
+    await expect(
+      useCase.execute({ pluginAddress, tokenContractAddress, page }),
+    ).rejects.toThrow('Error while getting token-voting membership');
+  });
+
+  it('wraps ENS-store errors', async () => {
+    const ensStore: ENSStore = {
+      lookUpPrimaryNames: vi.fn().mockRejectedValue(new Error('rpc down')),
+    };
+    const useCase = new GetTokenVotingMembershipUseCase(
+      buildMemberStore(),
+      ensStore,
+    );
 
     await expect(
       useCase.execute({ pluginAddress, tokenContractAddress, page }),

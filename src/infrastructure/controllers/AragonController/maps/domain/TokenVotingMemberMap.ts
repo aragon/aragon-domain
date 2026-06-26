@@ -26,7 +26,7 @@ export function mapDomainToDTO(
   const last = member.lastActivityTimestamp;
   return {
     address: member.address.toHexString(),
-    ens: member.ens,
+    ens: member.ens ? member.ens.toString() : null,
     votingPower: member.votingPower.value.toBigNumber().toFixed(0),
     metrics: {
       firstActivityTimestamp: first === 0 ? null : first,

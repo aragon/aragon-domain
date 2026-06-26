@@ -4,6 +4,7 @@
 export { AragonController as AragonDomain } from './infrastructure/controllers/AragonController/AragonController';
 
 // Infrastructure
+export type { RpcUrls } from './infrastructure/config/RpcUrls';
 export { EnvioClient } from './infrastructure/stores/EnvioClient';
 
 // Public DTOs + request types (type-only)

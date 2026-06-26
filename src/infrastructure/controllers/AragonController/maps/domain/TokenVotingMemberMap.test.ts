@@ -1,3 +1,4 @@
+import { ENSName } from '@/domain/ens/ENSName';
 import { TokenVotingMember } from '@/domain/member/TokenVotingMember';
 import { Address } from '@/domain/primitives';
 import { VotingPower } from '@/domain/voting-power/VotingPower';
@@ -13,7 +14,7 @@ describe('TokenVotingMemberMap.mapDomainToDTO', () => {
   ) =>
     TokenVotingMember.create({
       address,
-      ens: 'alice.eth',
+      ens: ENSName.fromString('alice.eth'),
       votingPower: VotingPower.fromBigInt(5000000000000000000n),
       firstActivityTimestamp: 1705320000,
       lastActivityTimestamp: 1718872200,

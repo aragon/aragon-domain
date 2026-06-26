@@ -38,8 +38,8 @@ export interface FindMembersResponseInput {
 }
 
 /**
- * First query response: the page of delegates, the id-only set used
- * for total-count, and the plugin's MemberMetrics.
+ * The members query response: the page of delegates, the id-only
+ * set used for total-count, and the plugin's MemberMetrics.
  */
 export function findMembersResponse({
   delegates = [],
@@ -54,16 +54,4 @@ export function findMembersResponse({
     })),
     MemberMetrics: metrics,
   };
-}
-
-/** A single `ReverseName` row. */
-export function reverseName(address: string, coinType: string, name: string) {
-  return { address, coinType, name };
-}
-
-/** Second query response: the reverse-name rows for the page. */
-export function reverseNamesResponse(
-  rows: ReturnType<typeof reverseName>[] = [],
-) {
-  return { ReverseName: rows };
 }

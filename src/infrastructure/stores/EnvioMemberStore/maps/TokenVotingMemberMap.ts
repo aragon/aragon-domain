@@ -1,21 +1,13 @@
 import { z } from 'zod';
-import { TokenVotingMember } from '@/domain/member/TokenVotingMember';
-import { Address, assertHexString } from '@/domain/primitives';
+import { TokenVotingMemberRecord } from '@/domain/member/TokenVotingMemberRecord';
+import { Address, assertHexString, zExtended } from '@/domain/primitives';
 import { VotingPower } from '@/domain/voting-power/VotingPower';
 
-/**
- * Shape of an `ERC20VotesDelegate` row on the indexer.
- *
- * `firstVotingPowerChangeTimestamp` / `lastVotingPowerChangeTimestamp`
- * are nullable: a delegate row can exist without ever having had a
- * DelegateVotesChanged event (e.g. created from a `+1` to
- * delegationCount via a DelegateChanged event on a zero balance).
- */
 const ERC20VotesDelegateSchema = z.object({
   id: z.string(),
   chainId: z.number(),
-  tokenContractAddress: z.string(),
-  delegateAddress: z.string(),
+  tokenContractAddress: zExtended.hexString(),
+  delegateAddress: zExtended.hexString(),
   votingPower: z.string(),
   delegationCount: z.number(),
   firstVotingPowerChangeTimestamp: z.string().nullable(),
@@ -25,23 +17,12 @@ const ERC20VotesDelegateSchema = z.object({
 const MemberMetricsSchema = z.object({
   id: z.string(),
   chainId: z.number(),
-  pluginAddress: z.string(),
-  memberAddress: z.string(),
+  pluginAddress: zExtended.hexString(),
+  memberAddress: zExtended.hexString(),
   firstActivityTimestamp: z.string(),
   lastActivityTimestamp: z.string(),
 });
 
-/**
- * Shape of the `FindMembers` GraphQL response. Three top-level lists:
- *
- *   - `ERC20VotesDelegate`     — the requested page of delegates
- *   - `AllERC20VotesDelegate`  — every delegate id (used for total count)
- *   - `MemberMetrics`          — all member-metrics rows for the plugin
- *
- * The merge of `ERC20VotesDelegate` (generic / chain-wide) with
- * `MemberMetrics` (Aragon-specific) happens client-side; see the
- * store for the orchestration.
- */
 const FindMembersResponseSchema = z.object({
   ERC20VotesDelegate: z.array(ERC20VotesDelegateSchema),
   AllERC20VotesDelegate: z.array(z.object({ id: z.string() })),
@@ -52,80 +33,63 @@ export type ERC20VotesDelegateDTO = z.infer<typeof ERC20VotesDelegateSchema>;
 export type MemberMetricsDTO = z.infer<typeof MemberMetricsSchema>;
 export type FindMembersResponse = z.infer<typeof FindMembersResponseSchema>;
 
-/**
- * Trust boundary for the indexer's `FindMembers` response. Throws a
- * `ZodError` if the shape doesn't match.
- */
-export function parseFindMembersResponse(raw: unknown): FindMembersResponse {
-  return FindMembersResponseSchema.parse(raw);
+interface FindMembersResult {
+  records: TokenVotingMemberRecord[];
+  totalRecords: number;
+}
+
+export function mapDTOToDomain(raw: unknown): FindMembersResult {
+  const data = FindMembersResponseSchema.parse(raw);
+
+  const metricsByMember = new Map(
+    data.MemberMetrics.map((metrics) => [
+      metrics.memberAddress.toLowerCase(),
+      metrics,
+    ]),
+  );
+
+  const records = data.ERC20VotesDelegate.map((delegate) =>
+    toRecord(
+      delegate,
+      metricsByMember.get(delegate.delegateAddress.toLowerCase()),
+    ),
+  );
+
+  return { records, totalRecords: data.AllERC20VotesDelegate.length };
 }
 
 /**
- * Smallest of the defined inputs (treats `null`/`undefined` as
- * "no signal"). Returns `0` if neither side has a value.
+ * Assembles a single domain `TokenVotingMemberRecord` from a delegate
+ * row and its optional companion `MemberMetrics` row.
  */
-function minDefined(...values: Array<string | null | undefined>): number {
-  let min: number | undefined;
-  for (const v of values) {
-    if (v == null) continue;
-    const n = Number(v);
-    if (min === undefined || n < min) min = n;
-  }
-  return min ?? 0;
-}
-
-/**
- * Largest of the defined inputs. Returns `0` if neither side has a
- * value.
- */
-function maxDefined(...values: Array<string | null | undefined>): number {
-  let max: number | undefined;
-  for (const v of values) {
-    if (v == null) continue;
-    const n = Number(v);
-    if (max === undefined || n > max) max = n;
-  }
-  return max ?? 0;
-}
-
-/**
- * Maps a single `ERC20VotesDelegate` row (plus its companion
- * `MemberMetrics` row and any attached ENS name) to a domain
- * `TokenVotingMember`. Verifies that the address fields look like
- * `0x`-prefixed hex before passing them through to the domain
- * primitives — `Address.fromHexString` does the final shape check.
- */
-export function mapDTOToDomain(
+function toRecord(
   delegate: ERC20VotesDelegateDTO,
   metrics: MemberMetricsDTO | undefined,
-  ens: string | null,
-): TokenVotingMember {
-  assertHexString(
-    delegate.delegateAddress,
-    'delegateAddress must be a 0x-prefixed hex string',
-  );
-
-  // Activity is the merge of two signals:
-  //   - MemberMetrics: VoteCast / ProposalCreated activity in this plugin
-  //   - ERC20VotesDelegate: voting-power changes for this delegate-token pair
-  // The indexer keeps these denormalized across the generic / Aragon
-  // partition; the merge happens here so that a future split into two
-  // indexers needs no schema change beyond two GraphQL endpoints.
-  const firstActivityTimestamp = minDefined(
+): TokenVotingMemberRecord {
+  // A member's activity window spans both their governance activity
+  // (MemberMetrics: VoteCast / ProposalCreated) and their voting-power
+  // changes (ERC20VotesDelegate). Take the earliest start and latest end
+  // across whichever signals are present; 0 means "no activity recorded".
+  const firstSignals = [
     metrics?.firstActivityTimestamp,
     delegate.firstVotingPowerChangeTimestamp,
-  );
-  const lastActivityTimestamp = maxDefined(
+  ]
+    .filter((t): t is string => t != null)
+    .map(Number);
+  const lastSignals = [
     metrics?.lastActivityTimestamp,
     delegate.lastVotingPowerChangeTimestamp,
-  );
+  ]
+    .filter((t): t is string => t != null)
+    .map(Number);
 
-  return TokenVotingMember.create({
+  return TokenVotingMemberRecord.create({
     address: Address.fromHexString(delegate.delegateAddress),
     votingPower: VotingPower.fromBigInt(BigInt(delegate.votingPower)),
-    ens,
-    firstActivityTimestamp,
-    lastActivityTimestamp,
+    firstActivityTimestamp:
+      firstSignals.length > 0 ? Math.min(...firstSignals) : 0,
+    lastActivityTimestamp:
+      lastSignals.length > 0 ? Math.max(...lastSignals) : 0,
     delegationCount: delegate.delegationCount,
   });
 }

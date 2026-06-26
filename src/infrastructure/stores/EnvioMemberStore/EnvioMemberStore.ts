@@ -1,25 +1,16 @@
 import type { MemberStore } from '@/domain/member/MemberStore';
-import type { TokenVotingMember } from '@/domain/member/TokenVotingMember';
+import type { TokenVotingMemberRecord } from '@/domain/member/TokenVotingMemberRecord';
+import type { Address } from '@/domain/primitives';
 import type { Page } from '@/domain/primitives/pagination/Page';
 import { createPage } from '@/domain/primitives/pagination/Page';
 import type { PageRequest } from '@/domain/primitives/pagination/PageRequest';
 import type { EnvioClient } from '@/infrastructure/stores/EnvioClient';
-import * as ReverseNameMap from './maps/ReverseNameMap';
 import * as TokenVotingMemberMap from './maps/TokenVotingMemberMap';
 
 /**
  * Fetches a page of delegates by token (ordered by VP desc), every
  * delegate's id (for total-count), and the MemberMetrics for the
- * plugin — all in one round-trip.
- *
- * The query straddles the indexer's generic / Aragon partition:
- *   - ERC20VotesDelegate is generic (per-token, chain-wide)
- *   - MemberMetrics is Aragon-specific (per-plugin)
- *
- * Hasura cannot express a cross-entity join here, so the pairing
- * happens client-side. That client-side merge is also what makes the
- * eventual indexer split a no-op for this file beyond pointing the
- * two halves at separate GraphQL endpoints.
+ * plugin.
  */
 const FIND_MEMBERS_QUERY = `
   query FindMembers(
@@ -69,40 +60,21 @@ const FIND_MEMBERS_QUERY = `
   }
 `;
 
-/**
- * Fetches every `ReverseName` row that matches the given page of
- * delegate addresses. An address can have up to two rows on mainnet
- * (legacy `coinType=60` and ENSIP-19 `coinType=0x80000000`); we pull
- * both and pick precedence client-side via `ReverseNameMap`.
- *
- * Ordering by `coinType` descending puts `0x80000000` (2147483648)
- * ahead of `60`, so the first row per address in the dedupe pass is
- * the preferred one.
- */
-const FIND_REVERSE_NAMES_QUERY = `
-  query FindReverseNames($addresses: [String!]!) {
-    ReverseName(
-      where: { address: { _in: $addresses } }
-      order_by: [{ coinType: desc }]
-    ) {
-      address
-      coinType
-      name
-    }
-  }
-`;
-
 export class EnvioMemberStore implements MemberStore {
   constructor(private readonly envio: EnvioClient) {}
 
   public async findTokenVotingMembers(
-    pluginAddress: string,
-    tokenContractAddress: string,
+    pluginAddress: Address,
+    tokenContractAddress: Address,
     request: PageRequest,
-  ): Promise<Page<TokenVotingMember>> {
+  ): Promise<Page<TokenVotingMemberRecord>> {
     try {
-      const pluginAddressLower = pluginAddress.toLowerCase();
-      const tokenAddressLower = tokenContractAddress.toLowerCase();
+      // The indexer stores addresses lowercased; serialize the primitives
+      // to lowercase hex for the query variables.
+      const pluginAddressLower = pluginAddress.toHexString().toLowerCase();
+      const tokenAddressLower = tokenContractAddress
+        .toHexString()
+        .toLowerCase();
 
       const rawMembers = await this.envio.query(FIND_MEMBERS_QUERY, {
         tokenContractAddress: tokenAddressLower,
@@ -110,51 +82,13 @@ export class EnvioMemberStore implements MemberStore {
         limit: request.pageSize,
         offset: request.offset,
       });
-      const data = TokenVotingMemberMap.parseFindMembersResponse(rawMembers);
 
-      const metricsByMember = new Map(
-        data.MemberMetrics.map((m) => [m.memberAddress.toLowerCase(), m]),
-      );
+      const { records, totalRecords } =
+        TokenVotingMemberMap.mapDTOToDomain(rawMembers);
 
-      const pageAddresses = data.ERC20VotesDelegate.map((d) =>
-        d.delegateAddress.toLowerCase(),
-      );
-      const ensByAddress = await this.fetchReverseNames(pageAddresses);
-
-      const members = data.ERC20VotesDelegate.map((delegate) => {
-        const addressLower = delegate.delegateAddress.toLowerCase();
-        return TokenVotingMemberMap.mapDTOToDomain(
-          delegate,
-          metricsByMember.get(addressLower),
-          ensByAddress.get(addressLower) ?? null,
-        );
-      });
-
-      const totalRecords = data.AllERC20VotesDelegate.length;
-
-      return createPage(members, request.page, request.pageSize, totalRecords);
+      return createPage(records, request.page, request.pageSize, totalRecords);
     } catch (cause) {
       throw new Error('Error querying members from Envio', { cause });
     }
-  }
-
-  /**
-   * Resolves a batch of lowercase addresses to their preferred ENS
-   * primary names via the indexer's `ReverseName` entity.
-   *
-   * Returns an empty map when given no addresses — avoids issuing an
-   * empty `_in` query.
-   */
-  private async fetchReverseNames(
-    lowercaseAddresses: string[],
-  ): Promise<Map<string, string>> {
-    if (lowercaseAddresses.length === 0) {
-      return new Map();
-    }
-
-    const raw = await this.envio.query(FIND_REVERSE_NAMES_QUERY, {
-      addresses: lowercaseAddresses,
-    });
-    return ReverseNameMap.mapDTOToDomain(raw);
   }
 }

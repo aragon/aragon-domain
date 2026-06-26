@@ -1,28 +1,41 @@
 import assert from 'node:assert';
+import { createPublicClient } from 'viem';
 import { buildDomain } from './support/buildDomain';
-import {
-  ALICE,
-  BOB,
-  DEFAULT_EVM_COIN_TYPE,
-  PLUGIN,
-  TOKEN,
-} from './support/constants';
+import { ALICE, BOB, PLUGIN, TOKEN } from './support/constants';
 import {
   delegate,
   findMembersResponse,
-  reverseName,
-  reverseNamesResponse,
 } from './support/fixtures/tokenVotingMembers';
+
+// Stubbing `createPublicClient` so we can return a fake `getEnsName`that
+// we can mock.
+vi.mock('viem', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('viem')>()),
+  createPublicClient: vi.fn(),
+  http: vi.fn(),
+}));
+
+function stubEnsNames(table: Record<string, string | null>) {
+  const getEnsName = vi.fn(
+    async ({ address }: { address: string; coinType?: bigint }) =>
+      table[address.toLowerCase()] ?? null,
+  );
+  vi.mocked(createPublicClient).mockReturnValue({ getEnsName } as never);
+  return getEnsName;
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  stubEnsNames({});
+});
 
 describe('AragonDomain.getTokenVotingMembership', () => {
   it('returns a paginated DTO of token-voting members', async () => {
+    stubEnsNames({ [ALICE]: 'alice.eth' });
     const { domain } = buildDomain([
       findMembersResponse({
         delegates: [delegate(ALICE, { votingPower: '5000000000000000000' })],
       }),
-      reverseNamesResponse([
-        reverseName(ALICE, DEFAULT_EVM_COIN_TYPE, 'alice.eth'),
-      ]),
     ]);
 
     const response = await domain.getTokenVotingMembership({
@@ -49,12 +62,10 @@ describe('AragonDomain.getTokenVotingMembership', () => {
     expect(response.result.data[0].address).toMatch(/^0x[0-9a-fA-F]{40}$/);
   });
 
-  it('attaches the ENS name from the indexer ReverseName entity', async () => {
+  it('attaches the primary ENS name resolved via the ENS client', async () => {
+    const getEnsName = stubEnsNames({ [ALICE]: 'alice.eth' });
     const { domain } = buildDomain([
       findMembersResponse({ delegates: [delegate(ALICE), delegate(BOB)] }),
-      reverseNamesResponse([
-        reverseName(ALICE, DEFAULT_EVM_COIN_TYPE, 'alice.eth'),
-      ]),
     ]);
 
     const response = await domain.getTokenVotingMembership({
@@ -65,13 +76,14 @@ describe('AragonDomain.getTokenVotingMembership', () => {
     });
 
     assert(response.success);
+    // ALICE resolves; BOB has no primary name -> null.
     expect(response.result.data.map((m) => m.ens)).toEqual(['alice.eth', null]);
+    expect(getEnsName).toHaveBeenCalledTimes(2);
   });
 
   it('reflects a larger chain-wide total in the pagination metadata', async () => {
     const { domain } = buildDomain([
       findMembersResponse({ delegates: [delegate(ALICE)], totalRecords: 42 }),
-      reverseNamesResponse(),
     ]);
 
     const response = await domain.getTokenVotingMembership({
@@ -86,7 +98,27 @@ describe('AragonDomain.getTokenVotingMembership', () => {
     expect(response.result.metadata.totalPages).toBe(3);
   });
 
-  it('skips the reverse-name query when the page is empty', async () => {
+  it('resolves ENS out-of-band: one indexer query, names via the ENS client', async () => {
+    const getEnsName = stubEnsNames({ [ALICE]: 'alice.eth' });
+    const { domain, query } = buildDomain([
+      findMembersResponse({ delegates: [delegate(ALICE)] }),
+    ]);
+
+    const response = await domain.getTokenVotingMembership({
+      pluginAddress: PLUGIN,
+      tokenContractAddress: TOKEN,
+      page: 1,
+      pageSize: 20,
+    });
+
+    assert(response.success);
+    expect(response.result.data[0].ens).toBe('alice.eth');
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(getEnsName).toHaveBeenCalledTimes(1);
+  });
+
+  it('issues no ENS lookups when the page is empty', async () => {
+    const getEnsName = stubEnsNames({});
     const { domain, query } = buildDomain([findMembersResponse()]);
 
     const response = await domain.getTokenVotingMembership({
@@ -98,8 +130,8 @@ describe('AragonDomain.getTokenVotingMembership', () => {
 
     assert(response.success);
     expect(response.result.data).toHaveLength(0);
-    // Only the members query ran; no second round-trip for ENS names.
     expect(query).toHaveBeenCalledTimes(1);
+    expect(getEnsName).not.toHaveBeenCalled();
   });
 
   it('returns a failed response when the indexer query errors', async () => {

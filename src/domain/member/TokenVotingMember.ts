@@ -1,11 +1,13 @@
 import { ValueObject } from 'ddd-core-ts';
 import { z } from 'zod';
+import { ENSName } from '@/domain/ens/ENSName';
 import { Address } from '@/domain/primitives';
 import { VotingPower } from '@/domain/voting-power/VotingPower';
+import type { TokenVotingMemberRecord } from './TokenVotingMemberRecord';
 
 const TokenVotingMemberPropsSchema = z.object({
   address: z.instanceof(Address),
-  ens: z.string().nullable(),
+  ens: z.instanceof(ENSName).nullable(),
   votingPower: z.instanceof(VotingPower),
   firstActivityTimestamp: z.number().int().nonnegative(),
   lastActivityTimestamp: z.number().int().nonnegative(),
@@ -15,9 +17,7 @@ const TokenVotingMemberPropsSchema = z.object({
 type TokenVotingMemberProps = z.infer<typeof TokenVotingMemberPropsSchema>;
 
 /**
- * A member of a TokenVoting plugin: aggregated voting power on the
- * governance token plus per-plugin activity timestamps (unix seconds),
- * sourced from the indexer.
+ * A member of a TokenVoting plugin.
  */
 export class TokenVotingMember extends ValueObject<TokenVotingMemberProps> {
   /**
@@ -28,9 +28,10 @@ export class TokenVotingMember extends ValueObject<TokenVotingMemberProps> {
   }
 
   /**
-   * The member's ENS name, or null if not resolved.
+   * The member's primary ENS name, or null when the address has no
+   * primary name (or it could not be resolved).
    */
-  get ens(): string | null {
+  get ens(): ENSName | null {
     return this.props.ens;
   }
 
@@ -66,5 +67,23 @@ export class TokenVotingMember extends ValueObject<TokenVotingMemberProps> {
   static create(props: TokenVotingMemberProps): TokenVotingMember {
     const validated = TokenVotingMemberPropsSchema.parse(props);
     return new TokenVotingMember(validated);
+  }
+
+  /**
+   * Composes a fully-resolved member from its indexed on-chain record and
+   * primary ENS name.
+   */
+  static fromRecord(
+    record: TokenVotingMemberRecord,
+    ens: ENSName | null,
+  ): TokenVotingMember {
+    return TokenVotingMember.create({
+      address: record.address,
+      ens,
+      votingPower: record.votingPower,
+      firstActivityTimestamp: record.firstActivityTimestamp,
+      lastActivityTimestamp: record.lastActivityTimestamp,
+      delegationCount: record.delegationCount,
+    });
   }
 }
