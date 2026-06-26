@@ -1,6 +1,9 @@
 import { ENSName } from '@/domain/ens/ENSName';
 import type { ENSStore } from '@/domain/ens/ENSStore';
-import type { MemberStore } from '@/domain/member/MemberStore';
+import type {
+  MemberStore,
+  TokenVotingMemberData,
+} from '@/domain/member/MemberStore';
 import { TokenVotingMemberRecord } from '@/domain/member/TokenVotingMemberRecord';
 import { Address } from '@/domain/primitives';
 import { createPage } from '@/domain/primitives/pagination/Page';
@@ -20,21 +23,25 @@ describe('GetTokenVotingMembershipUseCase', () => {
   const firstActivityTimestamp = 1705320000;
   const lastActivityTimestamp = 1718872200;
 
-  const buildRecord = (): TokenVotingMemberRecord =>
-    TokenVotingMemberRecord.create({
+  // The member store returns record/metrics pairs (no ENS); here the
+  // activity window comes from the record's voting-power changes.
+  const buildData = (): TokenVotingMemberData => ({
+    record: TokenVotingMemberRecord.create({
       address: memberAddress,
       votingPower: VotingPower.fromBigInt(5000000000000000000n),
-      firstActivityTimestamp,
-      lastActivityTimestamp,
       delegationCount: 4,
-    });
+      firstVotingPowerChangeTimestamp: firstActivityTimestamp,
+      lastVotingPowerChangeTimestamp: lastActivityTimestamp,
+    }),
+    metrics: null,
+  });
 
   const buildMemberStore = (
-    record: TokenVotingMemberRecord = buildRecord(),
+    data: TokenVotingMemberData = buildData(),
   ): MemberStore => ({
     findTokenVotingMembers: vi
       .fn()
-      .mockResolvedValue(createPage([record], 1, 20, 1)),
+      .mockResolvedValue(createPage([data], 1, 20, 1)),
   });
 
   const buildEnsStore = (

@@ -1,0 +1,32 @@
+import { mapDTOToDomain } from './MemberGovernanceMetricsMap';
+
+const PLUGIN = '0x1111111111111111111111111111111111111111';
+const MEMBER = '0x0123456789abcdef0123456789abcdef01234567';
+
+const buildMetrics = (overrides: Record<string, unknown> = {}) => ({
+  id: `1-${PLUGIN}-${MEMBER}`,
+  chainId: 1,
+  pluginAddress: PLUGIN,
+  memberAddress: MEMBER,
+  firstActivityTimestamp: '1650000000',
+  lastActivityTimestamp: '1750000000',
+  ...overrides,
+});
+
+describe('MemberGovernanceMetricsMap.mapDTOToDomain', () => {
+  it('throws when the response shape does not match', () => {
+    expect(() => mapDTOToDomain({ MemberGovernanceMetrics: 'oops' })).toThrow();
+    expect(() => mapDTOToDomain(null)).toThrow();
+  });
+
+  it('maps governance-metrics rows to domain objects', () => {
+    const metrics = mapDTOToDomain({
+      MemberGovernanceMetrics: [buildMetrics()],
+    });
+
+    expect(metrics).toHaveLength(1);
+    expect(metrics[0].memberAddress.toHexString().toLowerCase()).toBe(MEMBER);
+    expect(metrics[0].firstActivityTimestamp).toBe(1650000000);
+    expect(metrics[0].lastActivityTimestamp).toBe(1750000000);
+  });
+});

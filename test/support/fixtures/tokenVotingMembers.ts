@@ -39,7 +39,7 @@ export interface FindMembersResponseInput {
 
 /**
  * The members query response: the page of delegates, the id-only
- * set used for total-count, and the plugin's MemberMetrics.
+ * set used for total-count, and the plugin's MemberGovernanceMetrics.
  */
 export function findMembersResponse({
   delegates = [],
@@ -52,6 +52,6 @@ export function findMembersResponse({
     AllERC20VotesDelegate: Array.from({ length: total }, (_, i) => ({
       id: `total-${i}`,
     })),
-    MemberMetrics: metrics,
+    MemberGovernanceMetrics: metrics,
   };
 }

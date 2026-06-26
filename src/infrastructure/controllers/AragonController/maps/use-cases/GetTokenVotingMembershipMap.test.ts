@@ -1,5 +1,6 @@
 import { ENSName } from '@/domain/ens/ENSName';
 import { TokenVotingMember } from '@/domain/member/TokenVotingMember';
+import { TokenVotingMemberRecord } from '@/domain/member/TokenVotingMemberRecord';
 import { Address } from '@/domain/primitives';
 import { createPage } from '@/domain/primitives/pagination/Page';
 import { VotingPower } from '@/domain/voting-power/VotingPower';
@@ -45,16 +46,19 @@ describe('GetTokenVotingMembershipMap', () => {
 
   describe('mapDomainToDTO', () => {
     it('maps a domain page to a PageDTO of TokenVotingMemberDTO', () => {
-      const member = TokenVotingMember.create({
-        address: Address.fromHexString(
-          '0x0123456789abcdef0123456789abcdef01234567',
-        ),
-        ens: ENSName.fromString('alice.eth'),
-        votingPower: VotingPower.fromBigInt(5000000000000000000n),
-        firstActivityTimestamp: 1705320000,
-        lastActivityTimestamp: 1718872200,
-        delegationCount: 3,
-      });
+      const member = TokenVotingMember.create(
+        TokenVotingMemberRecord.create({
+          address: Address.fromHexString(
+            '0x0123456789abcdef0123456789abcdef01234567',
+          ),
+          votingPower: VotingPower.fromBigInt(5000000000000000000n),
+          delegationCount: 3,
+          firstVotingPowerChangeTimestamp: 1705320000,
+          lastVotingPowerChangeTimestamp: 1718872200,
+        }),
+        null,
+        ENSName.fromString('alice.eth'),
+      );
       const page = createPage([member], 1, 20, 1);
 
       const dto = mapDomainToDTO(page);

@@ -57,12 +57,12 @@ const buildDelegate = (
 describe('EnvioMemberStore', () => {
   const page = PageRequest.create({ page: 1, pageSize: 20 });
 
-  it('returns a page of member records in a single query (no ENS round-trip)', async () => {
+  it('returns a page of record/metrics pairs in a single query (no ENS round-trip)', async () => {
     const { envio, calls } = buildMockEnvioClient([
       {
         ERC20VotesDelegate: [buildDelegate(ALICE), buildDelegate(BOB)],
         AllERC20VotesDelegate: [{ id: 'a' }, { id: 'b' }],
-        MemberMetrics: [],
+        MemberGovernanceMetrics: [],
       },
     ]);
     const store = new EnvioMemberStore(envio);
@@ -76,14 +76,16 @@ describe('EnvioMemberStore', () => {
     expect(result.items).toHaveLength(2);
     expect(result.totalRecords).toBe(2);
     expect(calls).toHaveLength(1);
+    // No governance metrics for these members → null on each pair.
+    expect(result.items[0].metrics).toBeNull();
   });
 
-  it('merges MemberMetrics activity into the matching delegate record', async () => {
+  it('pairs MemberGovernanceMetrics with the matching record by address', async () => {
     const { envio } = buildMockEnvioClient([
       {
         ERC20VotesDelegate: [buildDelegate(ALICE)],
         AllERC20VotesDelegate: [{ id: 'a' }],
-        MemberMetrics: [
+        MemberGovernanceMetrics: [
           {
             id: `1-${PLUGIN}-${ALICE}`,
             chainId: 1,
@@ -103,11 +105,11 @@ describe('EnvioMemberStore', () => {
       page,
     );
 
-    // metrics first-activity (1650000000) is earlier than the delegate's
-    // first VP change (1700000000); metrics last-activity (1750000000) is
-    // later than the delegate's last VP change (1700000100).
-    expect(result.items[0].firstActivityTimestamp).toBe(1650000000);
-    expect(result.items[0].lastActivityTimestamp).toBe(1750000000);
+    const { record, metrics } = result.items[0];
+    expect(record.address.toHexString().toLowerCase()).toBe(ALICE);
+    expect(record.firstVotingPowerChangeTimestamp).toBe(1700000000);
+    expect(metrics?.firstActivityTimestamp).toBe(1650000000);
+    expect(metrics?.lastActivityTimestamp).toBe(1750000000);
   });
 
   it('returns an empty page when there are no delegates', async () => {
@@ -115,7 +117,7 @@ describe('EnvioMemberStore', () => {
       {
         ERC20VotesDelegate: [],
         AllERC20VotesDelegate: [],
-        MemberMetrics: [],
+        MemberGovernanceMetrics: [],
       },
     ]);
     const store = new EnvioMemberStore(envio);

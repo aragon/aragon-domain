@@ -1,17 +1,15 @@
 import { ValueObject } from 'ddd-core-ts';
 import { z } from 'zod';
 import { ENSName } from '@/domain/ens/ENSName';
-import { Address } from '@/domain/primitives';
-import { VotingPower } from '@/domain/voting-power/VotingPower';
-import type { TokenVotingMemberRecord } from './TokenVotingMemberRecord';
+import type { Address } from '@/domain/primitives';
+import type { VotingPower } from '@/domain/voting-power/VotingPower';
+import { MemberGovernanceMetrics } from './MemberGovernanceMetrics';
+import { TokenVotingMemberRecord } from './TokenVotingMemberRecord';
 
 const TokenVotingMemberPropsSchema = z.object({
-  address: z.instanceof(Address),
+  record: z.instanceof(TokenVotingMemberRecord),
+  metrics: z.instanceof(MemberGovernanceMetrics).nullable(),
   ens: z.instanceof(ENSName).nullable(),
-  votingPower: z.instanceof(VotingPower),
-  firstActivityTimestamp: z.number().int().nonnegative(),
-  lastActivityTimestamp: z.number().int().nonnegative(),
-  delegationCount: z.number().int().nonnegative(),
 });
 
 type TokenVotingMemberProps = z.infer<typeof TokenVotingMemberPropsSchema>;
@@ -24,7 +22,7 @@ export class TokenVotingMember extends ValueObject<TokenVotingMemberProps> {
    * The member's wallet address.
    */
   get address(): Address {
-    return this.props.address;
+    return this.props.record.address;
   }
 
   /**
@@ -39,21 +37,7 @@ export class TokenVotingMember extends ValueObject<TokenVotingMemberProps> {
    * The member's voting power.
    */
   get votingPower(): VotingPower {
-    return this.props.votingPower;
-  }
-
-  /**
-   * Unix-seconds timestamp of the member's first observed activity.
-   */
-  get firstActivityTimestamp(): number {
-    return this.props.firstActivityTimestamp;
-  }
-
-  /**
-   * Unix-seconds timestamp of the member's most recent observed activity.
-   */
-  get lastActivityTimestamp(): number {
-    return this.props.lastActivityTimestamp;
+    return this.props.record.votingPower;
   }
 
   /**
@@ -61,29 +45,59 @@ export class TokenVotingMember extends ValueObject<TokenVotingMemberProps> {
    * to this member (counts self-delegation).
    */
   get delegationCount(): number {
-    return this.props.delegationCount;
-  }
-
-  static create(props: TokenVotingMemberProps): TokenVotingMember {
-    const validated = TokenVotingMemberPropsSchema.parse(props);
-    return new TokenVotingMember(validated);
+    return this.props.record.delegationCount;
   }
 
   /**
-   * Composes a fully-resolved member from its indexed on-chain record and
-   * primary ENS name.
+   * Unix-seconds timestamp of the member's first observed activity.
+   * "Activity" includes voting power changes, votes cast, and proposals
+   * created. `0` means "no activity recorded".
    */
-  static fromRecord(
+  get firstActivityTimestamp(): number {
+    return earliest([
+      this.props.metrics?.firstActivityTimestamp,
+      this.props.record.firstVotingPowerChangeTimestamp,
+    ]);
+  }
+
+  /**
+   * Unix-seconds timestamp of the member's most recent observed activity.
+   * "Activity" includes voting power changes, votes cast, and proposals
+   * created. `0` means "no activity recorded".
+   */
+  get lastActivityTimestamp(): number {
+    return latest([
+      this.props.metrics?.lastActivityTimestamp,
+      this.props.record.lastVotingPowerChangeTimestamp,
+    ]);
+  }
+
+  static create(
     record: TokenVotingMemberRecord,
+    metrics: MemberGovernanceMetrics | null,
     ens: ENSName | null,
   ): TokenVotingMember {
-    return TokenVotingMember.create({
-      address: record.address,
+    const validated = TokenVotingMemberPropsSchema.parse({
+      record,
+      metrics,
       ens,
-      votingPower: record.votingPower,
-      firstActivityTimestamp: record.firstActivityTimestamp,
-      lastActivityTimestamp: record.lastActivityTimestamp,
-      delegationCount: record.delegationCount,
     });
+    return new TokenVotingMember(validated);
   }
+}
+
+/**
+ * Earliest of the defined unix-seconds signals; `0` when none is present.
+ */
+function earliest(signals: Array<number | null | undefined>): number {
+  const defined = signals.filter((signal): signal is number => signal != null);
+  return defined.length > 0 ? Math.min(...defined) : 0;
+}
+
+/**
+ * Latest of the defined unix-seconds signals; `0` when none is present.
+ */
+function latest(signals: Array<number | null | undefined>): number {
+  const defined = signals.filter((signal): signal is number => signal != null);
+  return defined.length > 0 ? Math.max(...defined) : 0;
 }

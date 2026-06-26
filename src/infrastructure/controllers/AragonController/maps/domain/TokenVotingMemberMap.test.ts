@@ -1,5 +1,6 @@
 import { ENSName } from '@/domain/ens/ENSName';
 import { TokenVotingMember } from '@/domain/member/TokenVotingMember';
+import { TokenVotingMemberRecord } from '@/domain/member/TokenVotingMemberRecord';
 import { Address } from '@/domain/primitives';
 import { VotingPower } from '@/domain/voting-power/VotingPower';
 import { mapDomainToDTO } from './TokenVotingMemberMap';
@@ -10,17 +11,29 @@ describe('TokenVotingMemberMap.mapDomainToDTO', () => {
   );
 
   const buildMember = (
-    overrides: Partial<Parameters<typeof TokenVotingMember.create>[0]> = {},
-  ) =>
-    TokenVotingMember.create({
-      address,
-      ens: ENSName.fromString('alice.eth'),
-      votingPower: VotingPower.fromBigInt(5000000000000000000n),
-      firstActivityTimestamp: 1705320000,
-      lastActivityTimestamp: 1718872200,
-      delegationCount: 3,
-      ...overrides,
-    });
+    opts: {
+      ens?: ENSName | null;
+      firstVotingPowerChangeTimestamp?: number | null;
+      lastVotingPowerChangeTimestamp?: number | null;
+    } = {},
+  ) => {
+    const {
+      ens = ENSName.fromString('alice.eth'),
+      firstVotingPowerChangeTimestamp = 1705320000,
+      lastVotingPowerChangeTimestamp = 1718872200,
+    } = opts;
+    return TokenVotingMember.create(
+      TokenVotingMemberRecord.create({
+        address,
+        votingPower: VotingPower.fromBigInt(5000000000000000000n),
+        delegationCount: 3,
+        firstVotingPowerChangeTimestamp,
+        lastVotingPowerChangeTimestamp,
+      }),
+      null,
+      ens,
+    );
+  };
 
   it('maps a Member with full activity to a DTO', () => {
     const dto = mapDomainToDTO(buildMember());
@@ -37,7 +50,10 @@ describe('TokenVotingMemberMap.mapDomainToDTO', () => {
 
   it('serializes zero activity timestamps as null (no recorded activity)', () => {
     const dto = mapDomainToDTO(
-      buildMember({ firstActivityTimestamp: 0, lastActivityTimestamp: 0 }),
+      buildMember({
+        firstVotingPowerChangeTimestamp: null,
+        lastVotingPowerChangeTimestamp: null,
+      }),
     );
 
     expect(dto.metrics.firstActivityTimestamp).toBeNull();

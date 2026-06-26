@@ -7,26 +7,39 @@ describe('TokenVotingMemberRecord', () => {
     '0x0123456789abcdef0123456789abcdef01234567',
   );
 
-  const validProps = {
-    address,
-    votingPower: VotingPower.fromBigInt(1000000000000000000n),
-    firstActivityTimestamp: 1705320000,
-    lastActivityTimestamp: 1718872200,
-    delegationCount: 3,
-  };
+  const build = (
+    overrides: Partial<
+      Parameters<typeof TokenVotingMemberRecord.create>[0]
+    > = {},
+  ) =>
+    TokenVotingMemberRecord.create({
+      address,
+      votingPower: VotingPower.fromBigInt(1000000000000000000n),
+      delegationCount: 2,
+      firstVotingPowerChangeTimestamp: 1700000000,
+      lastVotingPowerChangeTimestamp: 1700000100,
+      ...overrides,
+    });
 
-  it('creates a valid record', () => {
-    const record = TokenVotingMemberRecord.create(validProps);
+  it('exposes its properties', () => {
+    const record = build();
     expect(record.address.equals(address)).toBe(true);
     expect(record.votingPower.isZero).toBe(false);
-    expect(record.firstActivityTimestamp).toBe(1705320000);
-    expect(record.lastActivityTimestamp).toBe(1718872200);
-    expect(record.delegationCount).toBe(3);
+    expect(record.delegationCount).toBe(2);
+    expect(record.firstVotingPowerChangeTimestamp).toBe(1700000000);
+    expect(record.lastVotingPowerChangeTimestamp).toBe(1700000100);
+  });
+
+  it('allows null voting-power-change timestamps', () => {
+    const record = build({
+      firstVotingPowerChangeTimestamp: null,
+      lastVotingPowerChangeTimestamp: null,
+    });
+    expect(record.firstVotingPowerChangeTimestamp).toBeNull();
+    expect(record.lastVotingPowerChangeTimestamp).toBeNull();
   });
 
   it('rejects a negative delegation count', () => {
-    expect(() =>
-      TokenVotingMemberRecord.create({ ...validProps, delegationCount: -1 }),
-    ).toThrow();
+    expect(() => build({ delegationCount: -1 })).toThrow();
   });
 });

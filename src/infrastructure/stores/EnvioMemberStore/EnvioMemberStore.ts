@@ -1,16 +1,17 @@
-import type { MemberStore } from '@/domain/member/MemberStore';
-import type { TokenVotingMemberRecord } from '@/domain/member/TokenVotingMemberRecord';
+import type {
+  MemberStore,
+  TokenVotingMemberData,
+} from '@/domain/member/MemberStore';
 import type { Address } from '@/domain/primitives';
 import type { Page } from '@/domain/primitives/pagination/Page';
 import { createPage } from '@/domain/primitives/pagination/Page';
 import type { PageRequest } from '@/domain/primitives/pagination/PageRequest';
 import type { EnvioClient } from '@/infrastructure/stores/EnvioClient';
-import * as TokenVotingMemberMap from './maps/TokenVotingMemberMap';
+import * as MemberGovernanceMetricsMap from './maps/MemberGovernanceMetricsMap';
+import * as TokenVotingMemberRecordMap from './maps/TokenVotingMemberRecordMap';
 
 /**
- * Fetches a page of delegates by token (ordered by VP desc), every
- * delegate's id (for total-count), and the MemberMetrics for the
- * plugin.
+ * Fetches a page of members by token (ordered by VP desc).
  */
 const FIND_MEMBERS_QUERY = `
   query FindMembers(
@@ -45,7 +46,7 @@ const FIND_MEMBERS_QUERY = `
     ) {
       id
     }
-    MemberMetrics(
+    MemberGovernanceMetrics(
       where: {
         pluginAddress: { _eq: $pluginAddress }
       }
@@ -67,7 +68,7 @@ export class EnvioMemberStore implements MemberStore {
     pluginAddress: Address,
     tokenContractAddress: Address,
     request: PageRequest,
-  ): Promise<Page<TokenVotingMemberRecord>> {
+  ): Promise<Page<TokenVotingMemberData>> {
     try {
       // The indexer stores addresses lowercased; serialize the primitives
       // to lowercase hex for the query variables.
@@ -76,7 +77,7 @@ export class EnvioMemberStore implements MemberStore {
         .toHexString()
         .toLowerCase();
 
-      const rawMembers = await this.envio.query(FIND_MEMBERS_QUERY, {
+      const raw = await this.envio.query(FIND_MEMBERS_QUERY, {
         tokenContractAddress: tokenAddressLower,
         pluginAddress: pluginAddressLower,
         limit: request.pageSize,
@@ -84,9 +85,26 @@ export class EnvioMemberStore implements MemberStore {
       });
 
       const { records, totalRecords } =
-        TokenVotingMemberMap.mapDTOToDomain(rawMembers);
+        TokenVotingMemberRecordMap.mapDTOToDomain(raw);
+      const metrics = MemberGovernanceMetricsMap.mapDTOToDomain(raw);
 
-      return createPage(records, request.page, request.pageSize, totalRecords);
+      const metricsByMember = new Map(
+        metrics.map((entry) => [
+          entry.memberAddress.toHexString().toLowerCase(),
+          entry,
+        ]),
+      );
+
+      // Pair each on-chain record with its governance metrics (one query,
+      // so the join happens here); ENS is resolved in the use case.
+      const data = records.map<TokenVotingMemberData>((record) => ({
+        record,
+        metrics:
+          metricsByMember.get(record.address.toHexString().toLowerCase()) ??
+          null,
+      }));
+
+      return createPage(data, request.page, request.pageSize, totalRecords);
     } catch (cause) {
       throw new Error('Error querying members from Envio', { cause });
     }

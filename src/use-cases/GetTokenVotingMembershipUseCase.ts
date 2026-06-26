@@ -33,29 +33,30 @@ export class GetTokenVotingMembershipUseCase
     props: GetTokenVotingMembershipUseCaseProps,
   ): Promise<Page<TokenVotingMember>> {
     try {
-      const records = await this.memberStore.findTokenVotingMembers(
+      const memberPage = await this.memberStore.findTokenVotingMembers(
         props.pluginAddress,
         props.tokenContractAddress,
         props.page,
       );
 
       const namesByAddress = await this.ensStore.lookUpPrimaryNames(
-        records.items.map((record) => record.address),
+        memberPage.items.map((data) => data.record.address),
       );
 
-      const members = records.items.map((record) =>
-        TokenVotingMember.fromRecord(
-          record,
+      const members = memberPage.items.map((data) =>
+        TokenVotingMember.create(
+          data.record,
+          data.metrics,
           // ENSStore keys its map by checksummed hex address.
-          namesByAddress.get(record.address.toHexString()) ?? null,
+          namesByAddress.get(data.record.address.toHexString()) ?? null,
         ),
       );
 
       return createPage(
         members,
-        records.page,
-        records.pageSize,
-        records.totalRecords,
+        memberPage.page,
+        memberPage.pageSize,
+        memberPage.totalRecords,
       );
     } catch (cause) {
       throw new Error('Error while getting token-voting membership', {
