@@ -15,8 +15,8 @@ importers:
   .:
     dependencies:
       bignumber.js:
-        specifier: 11.1.4
-        version: 11.1.4
+        specifier: 11.1.5
+        version: 11.1.5
       ddd-core-ts:
         specifier: 0.1.1
         version: 0.1.1
@@ -855,8 +855,8 @@ packages:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
 
-  bignumber.js@11.1.4:
-    resolution: {integrity: sha512-AJ9dSeaUGj2xu7tEwmdqb51dqdb633xo4njI9K8ZFfcLrNr0XN8/EPkkZUNaF9fkCblGt2zVwZymesUdGynEkQ==}
+  bignumber.js@11.1.5:
+    resolution: {integrity: sha512-6WmzCNtUnfKpbozq+hOgWaZMMzORmYBwF1xZScyoIX3QRYWeKTtxxwDOW5tIz7C9BdjkIYHGTcelCLkXg0mndw==}
 
   brace-expansion@2.1.1:
     resolution: {integrity: sha512-WR1cURNjuvBLMZBMbqM0UoE+WAfdUcEV1ccD8PVBVOI+Z3ND4+SZbN8RsfT2bMuG1qwz5RFvPukSZm5fF2D5eA==}
@@ -2301,7 +2301,7 @@ snapshots:
     dependencies:
       is-windows: 1.0.2
 
-  bignumber.js@11.1.4: {}
+  bignumber.js@11.1.5: {}
 
   brace-expansion@2.1.1:
     dependencies:
