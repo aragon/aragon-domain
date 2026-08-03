@@ -37,11 +37,11 @@
   },
   "homepage": "https://github.com/aragon/aragon-domain#readme",
   "dependencies": {
-    "bignumber.js": "11.1.4",
+    "bignumber.js": "11.1.5",
     "ddd-core-ts": "0.1.1",
     "graphql": "16.14.1",
     "graphql-request": "7.4.0",
-    "viem": "2.53.1",
+    "viem": "2.55.10",
     "zod": "3.25.76"
   },
   "devDependencies": {
