@@ -2,6 +2,8 @@
  * Shared addresses and constants for the integration test suite.
  */
 
+export const CHAIN_ID = 1;
+
 export const ALICE = '0x0123456789abcdef0123456789abcdef01234567';
 export const BOB = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 

@@ -6,8 +6,20 @@
  */
 
 export interface TextRecord {
+  /**
+   * ENS text record key, e.g. `avatar` or `com.twitter`.
+   */
   key: string;
+
+  /**
+   * The record's current value.
+   */
   value: string;
+
+  /**
+   * Resolver version the record was written under. Defaults to `'0'`,
+   * the version a fresh resolver starts at.
+   */
   version?: string;
 }
 

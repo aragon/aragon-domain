@@ -12,17 +12,12 @@ const MemberGovernanceMetricsSchema = z.object({
 });
 
 /**
- * Slice of the `FindMembers` response owned by this mapper: the
- * governance-metrics rows for the plugin. Other top-level lists in the
- * response are ignored.
+ * Shape of the `FindMemberGovernanceMetrics` response: the governance
+ * metrics rows of the page's members within the plugin.
  */
 const ResponseSchema = z.object({
   MemberGovernanceMetrics: z.array(MemberGovernanceMetricsSchema),
 });
-
-export type MemberGovernanceMetricsDTO = z.infer<
-  typeof MemberGovernanceMetricsSchema
->;
 
 export function mapDTOToDomain(raw: unknown): MemberGovernanceActivity[] {
   const data = ResponseSchema.parse(raw);

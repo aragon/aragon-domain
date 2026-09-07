@@ -12,7 +12,7 @@
 
 ### Minor Changes
 
-- [#15](https://github.com/aragon/aragon-domain/pull/15) [`0f63598`](https://github.com/aragon/aragon-domain/commit/0f63598d834be0e45a4008ad25af703f283cb4f0) Thanks [@tyhonchik](https://github.com/tyhonchik)! - Rename package from `@aragon/aragon-domain` to `@aragon/aragon-domain`. Public controller export is now `AragonDomain`.
+- [#15](https://github.com/aragon/aragon-domain/pull/15) [`0f63598`](https://github.com/aragon/aragon-domain/commit/0f63598d834be0e45a4008ad25af703f283cb4f0) Thanks [@tyhonchik](https://github.com/tyhonchik)! - Rename package from `@aragon/aragon-subdomain` to `@aragon/aragon-domain`. Public controller export is now `AragonDomain`.
 
 ### Patch Changes
 

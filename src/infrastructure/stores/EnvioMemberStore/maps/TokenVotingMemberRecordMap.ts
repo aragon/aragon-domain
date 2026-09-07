@@ -15,9 +15,8 @@ const ERC20VotesDelegateSchema = z.object({
 });
 
 /**
- * Slice of the `FindMembers` response owned by this mapper: the requested
- * page of delegates plus the id-only list used for the chain-wide total
- * count. Other top-level lists in the response are ignored.
+ * Shape of the `FindDelegates` response: the requested page of delegates
+ * plus the id-only list the total count is derived from.
  */
 const ResponseSchema = z.object({
   ERC20VotesDelegate: z.array(ERC20VotesDelegateSchema),

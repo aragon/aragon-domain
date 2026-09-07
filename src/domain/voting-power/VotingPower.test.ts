@@ -6,6 +6,12 @@ describe('VotingPower', () => {
     expect(vp.toWei().toBigNumber().toString()).toBe('1000000000000000000');
   });
 
+  it('rejects negative values', () => {
+    expect(() => VotingPower.fromBigInt(-1n)).toThrow(
+      /weiValue must be non-negative/,
+    );
+  });
+
   it('creates zero', () => {
     const vp = VotingPower.zero();
     expect(vp.isZero).toBe(true);

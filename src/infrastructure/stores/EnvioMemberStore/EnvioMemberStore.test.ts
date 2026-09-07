@@ -1,4 +1,4 @@
-import { Address } from '@/domain/primitives';
+import { Address, ChainId } from '@/domain/primitives';
 import { PageRequest } from '@/domain/primitives/pagination/PageRequest';
 import type { EnvioClient } from '@/infrastructure/stores/EnvioClient';
 import { EnvioMemberStore } from './EnvioMemberStore';
@@ -6,15 +6,19 @@ import { EnvioMemberStore } from './EnvioMemberStore';
 const PLUGIN = '0x1111111111111111111111111111111111111111';
 const TOKEN = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
 
+const CHAIN_ID = ChainId.fromNumber(1);
 const PLUGIN_ADDRESS = Address.fromHexString(PLUGIN);
 const TOKEN_ADDRESS = Address.fromHexString(TOKEN);
 
 const ALICE = '0x0123456789abcdef0123456789abcdef01234567';
 const BOB = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
+// Derived from the client contract so the stub cannot drift from it.
+type QueryArgs = Parameters<EnvioClient['query']>;
+
 interface QueryCall {
-  document: string;
-  variables: Record<string, unknown>;
+  document: QueryArgs[0];
+  variables: QueryArgs[1];
 }
 
 interface MockClient {
@@ -29,14 +33,11 @@ interface MockClient {
 function buildMockEnvioClient(responses: unknown[]): MockClient {
   const calls: QueryCall[] = [];
   const queue = [...responses];
-  const envio = {
-    query: vi.fn(
-      async (document: string, variables: Record<string, unknown>) => {
-        calls.push({ document, variables });
-        return queue.shift();
-      },
-    ),
-  } as unknown as EnvioClient;
+  const query: EnvioClient['query'] = async (document, variables) => {
+    calls.push({ document, variables });
+    return queue.shift();
+  };
+  const envio = { query: vi.fn(query) } as unknown as EnvioClient;
   return { envio, calls };
 }
 
@@ -54,56 +55,98 @@ const buildDelegate = (
   lastVotingPowerChangeTimestamp: '1700000100',
 });
 
-describe('EnvioMemberStore', () => {
-  const page = PageRequest.create({ page: 1, pageSize: 20 });
+const buildMetrics = (address: string) => ({
+  id: `1-${PLUGIN}-${address}`,
+  chainId: 1,
+  pluginAddress: PLUGIN,
+  memberAddress: address,
+  firstActivityTimestamp: '1650000000',
+  lastActivityTimestamp: '1750000000',
+});
 
-  it('returns a page of record/activity pairs in a single query (no ENS round-trip)', async () => {
+const delegatesResponse = (delegates: unknown[], total = delegates.length) => ({
+  ERC20VotesDelegate: delegates,
+  AllERC20VotesDelegate: Array.from({ length: total }, (_, i) => ({
+    id: `total-${i}`,
+  })),
+});
+
+const metricsResponse = (metrics: unknown[] = []) => ({
+  MemberGovernanceMetrics: metrics,
+});
+
+describe('EnvioMemberStore', () => {
+  const page = PageRequest.create({ page: 2, pageSize: 20 });
+  const query = {
+    chainId: CHAIN_ID,
+    pluginAddress: PLUGIN_ADDRESS,
+    tokenContractAddress: TOKEN_ADDRESS,
+    page,
+  };
+
+  it('returns a page of record/activity pairs from a delegates query and a page-sized metrics query', async () => {
     const { envio, calls } = buildMockEnvioClient([
-      {
-        ERC20VotesDelegate: [buildDelegate(ALICE), buildDelegate(BOB)],
-        AllERC20VotesDelegate: [{ id: 'a' }, { id: 'b' }],
-        MemberGovernanceMetrics: [],
-      },
+      delegatesResponse([buildDelegate(ALICE), buildDelegate(BOB)]),
+      metricsResponse(),
     ]);
     const store = new EnvioMemberStore(envio);
 
-    const result = await store.findTokenVotingMembers(
-      PLUGIN_ADDRESS,
-      TOKEN_ADDRESS,
-      page,
-    );
+    const result = await store.findTokenVotingMembers(query);
 
     expect(result.items).toHaveLength(2);
+    expect(result.page).toBe(2);
     expect(result.totalRecords).toBe(2);
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
+    // The metrics lookup is scoped to the addresses on this page.
+    expect(calls[1].variables).toEqual({
+      chainId: 1,
+      pluginAddress: PLUGIN,
+      memberAddresses: [ALICE, BOB],
+    });
     // No governance activity for these members → null on each pair.
     expect(result.items[0].activity).toBeNull();
   });
 
-  it('pairs MemberGovernanceMetrics with the matching record by address', async () => {
-    const { envio } = buildMockEnvioClient([
-      {
-        ERC20VotesDelegate: [buildDelegate(ALICE)],
-        AllERC20VotesDelegate: [{ id: 'a' }],
-        MemberGovernanceMetrics: [
-          {
-            id: `1-${PLUGIN}-${ALICE}`,
-            chainId: 1,
-            pluginAddress: PLUGIN,
-            memberAddress: ALICE,
-            firstActivityTimestamp: '1650000000',
-            lastActivityTimestamp: '1750000000',
-          },
-        ],
-      },
+  it('scopes the delegates query to the chain and token and pages it', async () => {
+    const { envio, calls } = buildMockEnvioClient([
+      delegatesResponse([buildDelegate(ALICE)]),
+      metricsResponse(),
     ]);
     const store = new EnvioMemberStore(envio);
 
-    const result = await store.findTokenVotingMembers(
-      PLUGIN_ADDRESS,
-      TOKEN_ADDRESS,
-      page,
+    await store.findTokenVotingMembers(query);
+
+    expect(calls[0].variables).toEqual({
+      chainId: 1,
+      tokenContractAddress: TOKEN,
+      limit: 20,
+      offset: 20,
+    });
+    expect(calls[0].document).toContain('chainId: { _eq: $chainId }');
+  });
+
+  it('orders by voting power with the delegate address as a stable tiebreaker', async () => {
+    const { envio, calls } = buildMockEnvioClient([
+      delegatesResponse([buildDelegate(ALICE)]),
+      metricsResponse(),
+    ]);
+    const store = new EnvioMemberStore(envio);
+
+    await store.findTokenVotingMembers(query);
+
+    expect(calls[0].document).toContain(
+      'order_by: [{ votingPower: desc }, { delegateAddress: asc }]',
     );
+  });
+
+  it('pairs MemberGovernanceMetrics with the matching record by address', async () => {
+    const { envio } = buildMockEnvioClient([
+      delegatesResponse([buildDelegate(ALICE)]),
+      metricsResponse([buildMetrics(ALICE)]),
+    ]);
+    const store = new EnvioMemberStore(envio);
+
+    const result = await store.findTokenVotingMembers(query);
 
     const { record, activity } = result.items[0];
     expect(record.address.toHexString().toLowerCase()).toBe(ALICE);
@@ -118,23 +161,27 @@ describe('EnvioMemberStore', () => {
     );
   });
 
-  it('returns an empty page when there are no delegates', async () => {
-    const { envio, calls } = buildMockEnvioClient([
-      {
-        ERC20VotesDelegate: [],
-        AllERC20VotesDelegate: [],
-        MemberGovernanceMetrics: [],
-      },
+  it('reflects the chain-wide total in the page metadata', async () => {
+    const { envio } = buildMockEnvioClient([
+      delegatesResponse([buildDelegate(ALICE)], 42),
+      metricsResponse(),
     ]);
     const store = new EnvioMemberStore(envio);
 
-    const result = await store.findTokenVotingMembers(
-      PLUGIN_ADDRESS,
-      TOKEN_ADDRESS,
-      page,
-    );
+    const result = await store.findTokenVotingMembers(query);
+
+    expect(result.totalRecords).toBe(42);
+    expect(result.totalPages).toBe(3);
+  });
+
+  it('skips the metrics query and returns an empty page when there are no delegates', async () => {
+    const { envio, calls } = buildMockEnvioClient([delegatesResponse([])]);
+    const store = new EnvioMemberStore(envio);
+
+    const result = await store.findTokenVotingMembers(query);
 
     expect(result.items).toHaveLength(0);
+    expect(result.totalRecords).toBe(0);
     expect(calls).toHaveLength(1);
   });
 
@@ -144,8 +191,8 @@ describe('EnvioMemberStore', () => {
     } as unknown as EnvioClient;
     const store = new EnvioMemberStore(envio);
 
-    await expect(
-      store.findTokenVotingMembers(PLUGIN_ADDRESS, TOKEN_ADDRESS, page),
-    ).rejects.toThrow('Error querying members from Envio');
+    await expect(store.findTokenVotingMembers(query)).rejects.toThrow(
+      'Error querying members from Envio',
+    );
   });
 });

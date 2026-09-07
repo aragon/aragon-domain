@@ -1,4 +1,5 @@
 import { AragonDomain, EnvioClient, type RpcUrls } from '../../src';
+import { CHAIN_ID } from './constants';
 
 export interface BuiltDomain {
   /** The public facade. Every integration test drives the stack through this. */
@@ -14,10 +15,14 @@ export interface BuiltDomain {
  *
  * Envio responses are consumed in call order. Draining past the end is a
  * test bug, so it throws rather than returning `undefined`.
+ *
+ * `rpcUrls` defaults to a mainnet entry because `AragonDomain.load` refuses
+ * to build without one; the ENS client is stubbed by the tests that need
+ * it, so the URL is never dialled.
  */
 export function buildDomain(
   responses: unknown[],
-  rpcUrls: RpcUrls = {},
+  rpcUrls: RpcUrls = { [CHAIN_ID]: 'https://unused.example.invalid' },
 ): BuiltDomain {
   const envio = new EnvioClient('https://unused.example.invalid');
   const queue = [...responses];
