@@ -4,11 +4,19 @@ import { z } from 'zod';
 import { Wei } from '@/domain/primitives';
 
 const VotingPowerPropsSchema = z.object({
-  weiValue: z.instanceof(Wei),
+  weiValue: z
+    .instanceof(Wei)
+    .refine(
+      (wei) => !wei.toBigNumber().isNegative(),
+      'weiValue must be non-negative',
+    ),
 });
 
 type VotingPowerProps = z.infer<typeof VotingPowerPropsSchema>;
 
+/**
+ * A non-negative amount of voting power, held in wei.
+ */
 export class VotingPower extends ValueObject<VotingPowerProps> {
   /**
    * The voting power in wei.

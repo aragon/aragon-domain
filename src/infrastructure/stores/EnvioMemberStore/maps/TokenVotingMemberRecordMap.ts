@@ -14,19 +14,33 @@ const ERC20VotesDelegateSchema = z.object({
   lastVotingPowerChangeTimestamp: z.string().nullable(),
 });
 
+const DelegateIdSchema = z.object({ id: z.string() });
+
 /**
- * Slice of the `FindMembers` response owned by this mapper: the requested
- * page of delegates plus the id-only list used for the chain-wide total
- * count. Other top-level lists in the response are ignored.
+ * Shape of the `FindDelegates` response: the requested page of delegates
+ * plus the first id-only batch of the member count.
  */
 const ResponseSchema = z.object({
   ERC20VotesDelegate: z.array(ERC20VotesDelegateSchema),
-  AllERC20VotesDelegate: z.array(z.object({ id: z.string() })),
+  AllERC20VotesDelegate: z.array(DelegateIdSchema),
+});
+
+/**
+ * Shape of the `CountDelegates` response: one further id-only batch of the
+ * member count.
+ */
+const CountResponseSchema = z.object({
+  ERC20VotesDelegate: z.array(DelegateIdSchema),
 });
 
 export interface TokenVotingMemberRecordsResult {
   records: TokenVotingMemberRecord[];
-  totalRecords: number;
+
+  /**
+   * Size of the count batch bundled with the page; the store adds the
+   * remaining batches to reach the total.
+   */
+  countedRecords: number;
 }
 
 export function mapDTOToDomain(raw: unknown): TokenVotingMemberRecordsResult {
@@ -46,7 +60,12 @@ export function mapDTOToDomain(raw: unknown): TokenVotingMemberRecordsResult {
     }),
   );
 
-  return { records, totalRecords: data.AllERC20VotesDelegate.length };
+  return { records, countedRecords: data.AllERC20VotesDelegate.length };
+}
+
+/** Returns the number of ids in a `CountDelegates` batch. */
+export function mapCountDTOToDomain(raw: unknown): number {
+  return CountResponseSchema.parse(raw).ERC20VotesDelegate.length;
 }
 
 /** Parses a nullable unix-seconds string into a Date, preserving null. */

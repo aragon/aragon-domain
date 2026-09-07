@@ -46,7 +46,10 @@ export class AragonController {
    * Initializes the `AragonDomain`.
    *
    * @param envioClient Indexer client backing the on-chain member data.
-   * @param rpcUrls RPC endpoint URLs keyed by chain id.
+   * @param rpcUrls RPC endpoint URLs keyed by chain id. The mainnet entry
+   * (chain id 1) is required: it backs ENS reverse resolution, and `load`
+   * throws without it rather than letting lookups fall back to viem's
+   * public endpoint.
    */
   static load(envioClient: EnvioClient, rpcUrls: RpcUrls): AragonController {
     const memberStore = new EnvioMemberStore(envioClient);
@@ -78,8 +81,8 @@ export class AragonController {
 
   /**
    * Returns a page of members of an Aragon TokenVoting plugin, scoped
-   * to a specific token contract and ordered by current voting power
-   * descending.
+   * to a specific chain and token contract and ordered by current voting
+   * power descending.
    */
   public getTokenVotingMembership(dto: GetTokenVotingMembershipRequestDTO) {
     return handleRequest(this.handlers.getTokenVotingMembership, dto);

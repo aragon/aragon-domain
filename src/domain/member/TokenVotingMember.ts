@@ -1,7 +1,7 @@
 import { ValueObject } from 'ddd-core-ts';
 import { z } from 'zod';
 import { ENSName } from '@/domain/ens/ENSName';
-import type { Address } from '@/domain/primitives';
+import { type Address, earliest, latest } from '@/domain/primitives';
 import type { VotingPower } from '@/domain/voting-power/VotingPower';
 import { MemberGovernanceActivity } from './MemberGovernanceActivity';
 import { TokenVotingMemberRecord } from './TokenVotingMemberRecord';
@@ -84,26 +84,4 @@ export class TokenVotingMember extends ValueObject<TokenVotingMemberProps> {
     });
     return new TokenVotingMember(validated);
   }
-}
-
-/**
- * Earliest of the defined signals; null when none is present.
- */
-function earliest(signals: Array<Date | null | undefined>): Date | null {
-  const defined = signals.filter((signal): signal is Date => signal != null);
-  if (defined.length === 0) {
-    return null;
-  }
-  return new Date(Math.min(...defined.map((date) => date.getTime())));
-}
-
-/**
- * Latest of the defined signals; null when none is present.
- */
-function latest(signals: Array<Date | null | undefined>): Date | null {
-  const defined = signals.filter((signal): signal is Date => signal != null);
-  if (defined.length === 0) {
-    return null;
-  }
-  return new Date(Math.max(...defined.map((date) => date.getTime())));
 }

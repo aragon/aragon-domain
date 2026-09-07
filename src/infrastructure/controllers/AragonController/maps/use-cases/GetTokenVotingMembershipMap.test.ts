@@ -7,12 +7,14 @@ import { VotingPower } from '@/domain/voting-power/VotingPower';
 import { mapDomainToDTO, mapDTOToDomain } from './GetTokenVotingMembershipMap';
 
 describe('GetTokenVotingMembershipMap', () => {
+  const chainId = 1;
   const pluginAddress = '0x1111111111111111111111111111111111111111';
   const tokenContractAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
 
   describe('mapDTOToDomain', () => {
     it('passes explicit page and pageSize through to the PageRequest', () => {
       const result = mapDTOToDomain({
+        chainId,
         pluginAddress,
         tokenContractAddress,
         page: 3,
@@ -24,15 +26,24 @@ describe('GetTokenVotingMembershipMap', () => {
     });
 
     it('defaults page to 1 and pageSize to 20 when omitted', () => {
-      const result = mapDTOToDomain({ pluginAddress, tokenContractAddress });
+      const result = mapDTOToDomain({
+        chainId,
+        pluginAddress,
+        tokenContractAddress,
+      });
 
       expect(result.page.page).toBe(1);
       expect(result.page.pageSize).toBe(20);
     });
 
-    it('converts plugin and token addresses to Address value objects', () => {
-      const result = mapDTOToDomain({ pluginAddress, tokenContractAddress });
+    it('converts the chain id and the plugin and token addresses to value objects', () => {
+      const result = mapDTOToDomain({
+        chainId,
+        pluginAddress,
+        tokenContractAddress,
+      });
 
+      expect(result.chainId.toNumber()).toBe(1);
       expect(
         result.pluginAddress.equals(Address.fromHexString(pluginAddress)),
       ).toBe(true);
@@ -41,6 +52,22 @@ describe('GetTokenVotingMembershipMap', () => {
           Address.fromHexString(tokenContractAddress),
         ),
       ).toBe(true);
+    });
+
+    it('rejects an invalid chain id', () => {
+      expect(() =>
+        mapDTOToDomain({ chainId: 0, pluginAddress, tokenContractAddress }),
+      ).toThrow();
+    });
+
+    it('rejects a non-hex plugin address', () => {
+      expect(() =>
+        mapDTOToDomain({
+          chainId,
+          pluginAddress: 'not-an-address',
+          tokenContractAddress,
+        }),
+      ).toThrow(/plugin address/);
     });
   });
 

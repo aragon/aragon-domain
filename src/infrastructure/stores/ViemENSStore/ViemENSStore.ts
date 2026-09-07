@@ -48,13 +48,22 @@ export class ViemENSStore implements ENSStore {
   /**
    * Builds a store backed by a mainnet viem client constructed from the
    * mainnet entry (chain id 1) of the RPC URL map, with multicall batching
-   * enabled. Falls back to viem's default public endpoint when no mainnet
-   * URL is provided.
+   * enabled. Throws when the map has no mainnet entry: viem would otherwise
+   * fall back to its public endpoint, and once that throttles every member
+   * silently resolves to "no name" because per-address failures degrade by
+   * design.
    */
   static fromRpcUrls(rpcUrls: RpcUrls): ViemENSStore {
+    const mainnetRpcUrl = rpcUrls[mainnet.id];
+    if (mainnetRpcUrl == null) {
+      throw new Error(
+        `ENS resolution requires an RPC URL for Ethereum mainnet (chain id ${mainnet.id})`,
+      );
+    }
+
     const client = createPublicClient({
       chain: mainnet,
-      transport: http(rpcUrls[mainnet.id]),
+      transport: http(mainnetRpcUrl),
       batch: { multicall: true },
     });
     return new ViemENSStore(client);

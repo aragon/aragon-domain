@@ -52,12 +52,11 @@ describe('ViemENSStore.fromRpcUrls', () => {
     );
   });
 
-  it('falls back to the default endpoint when no mainnet URL is provided', () => {
-    vi.mocked(createPublicClient).mockReturnValue(buildClient({}).client);
-
-    ViemENSStore.fromRpcUrls({});
-
-    expect(http).toHaveBeenCalledWith(undefined);
+  it('throws when the map has no mainnet entry instead of falling back to the public endpoint', () => {
+    expect(() => ViemENSStore.fromRpcUrls({ 137: MAINNET_RPC })).toThrow(
+      /chain id 1/,
+    );
+    expect(createPublicClient).not.toHaveBeenCalled();
   });
 
   it('produces a store that resolves names through the built client', async () => {

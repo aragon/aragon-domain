@@ -1,4 +1,7 @@
-import { mapDTOToDomain } from './TokenVotingMemberRecordMap';
+import {
+  mapCountDTOToDomain,
+  mapDTOToDomain,
+} from './TokenVotingMemberRecordMap';
 
 const TOKEN = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
 const MEMBER = '0x0123456789abcdef0123456789abcdef01234567';
@@ -21,14 +24,14 @@ describe('TokenVotingMemberRecordMap.mapDTOToDomain', () => {
     expect(() => mapDTOToDomain(null)).toThrow();
   });
 
-  it('maps records and reports the chain-wide total', () => {
-    const { records, totalRecords } = mapDTOToDomain({
+  it('maps records and reports the size of the bundled count batch', () => {
+    const { records, countedRecords } = mapDTOToDomain({
       ERC20VotesDelegate: [buildDelegate()],
       AllERC20VotesDelegate: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
     });
 
     expect(records).toHaveLength(1);
-    expect(totalRecords).toBe(3);
+    expect(countedRecords).toBe(3);
     expect(records[0].votingPower.toWei().toBigNumber().toFixed(0)).toBe(
       '5000000000000000000',
     );
@@ -54,5 +57,19 @@ describe('TokenVotingMemberRecordMap.mapDTOToDomain', () => {
 
     expect(records[0].firstVotingPowerChangeTimestamp).toBeNull();
     expect(records[0].lastVotingPowerChangeTimestamp).toBeNull();
+  });
+});
+
+describe('TokenVotingMemberRecordMap.mapCountDTOToDomain', () => {
+  it('returns the number of ids in the batch', () => {
+    expect(
+      mapCountDTOToDomain({ ERC20VotesDelegate: [{ id: 'a' }, { id: 'b' }] }),
+    ).toBe(2);
+    expect(mapCountDTOToDomain({ ERC20VotesDelegate: [] })).toBe(0);
+  });
+
+  it('throws when the response shape does not match', () => {
+    expect(() => mapCountDTOToDomain({ ERC20VotesDelegate: 'oops' })).toThrow();
+    expect(() => mapCountDTOToDomain(null)).toThrow();
   });
 });

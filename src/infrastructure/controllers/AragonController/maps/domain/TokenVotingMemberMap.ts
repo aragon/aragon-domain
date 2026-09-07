@@ -5,7 +5,7 @@ import type { TokenVotingMember } from '@/domain/member/TokenVotingMember';
  */
 export interface TokenVotingMemberDTO {
   /**
-   * A member of a TokenVoting plugin.
+   * The member's account address, EIP-55 checksummed.
    */
   address: string;
 
@@ -16,7 +16,9 @@ export interface TokenVotingMemberDTO {
   ens: string | null;
 
   /**
-   * The member's voting power.
+   * The member's current voting power in wei, as a decimal string. Always
+   * set for indexed members; nullable so consumers can carry members from
+   * sources that do not report a voting power through the same DTO.
    */
   votingPower: string | null;
 
