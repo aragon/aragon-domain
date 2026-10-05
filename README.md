@@ -1,5 +1,7 @@
 # Aragon Domain
 
+> **Archived.** The package moved into the [`aragon/app`](https://github.com/aragon/app) monorepo and lives at [`packages/aragon-domain`](https://github.com/aragon/app/tree/main/packages/aragon-domain). `@aragon/aragon-domain` is published to npm from there; open issues and pull requests against `aragon/app`. This repository is read-only.
+
 Shared business-logic package for the Aragon governance platform. It is the single home for everything a frontend consumer needs that *isn't* raw on-chain data — membership rules, voting-power math, delegation logic, permission checks, ENS profile enrichment. Paired with [`aragon-indexer`](../aragon-indexer) (which provides only deterministic, indexed on-chain state), it lets any frontend consumer stay thin.
 
 Today the package ships two capabilities — listing the members of a TokenVoting plugin (ERC20Votes delegates with voting power, delegation count, activity window and primary ENS name) and looking up the ENS text records attached to a member's `.aragon.eth` subdomain — with the rest of the surface area arriving as the Envio migration progresses.
